@@ -1,2 +1,3 @@
-dotABetween :: Int -> Int -> Int -> Bool
-dotABetween ab bc ac = ab >=0 && bc >=0 && ac >=0 && bc == ab + ac
+aBetweenBC :: (Num a, Ord a, Eq a) => a -> a -> a -> Bool
+aBetweenBC ab bc ac =
+  ab > 0 && ac > 0 && bc > 0 && bc == ab + ac
