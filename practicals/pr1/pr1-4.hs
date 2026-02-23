@@ -1,12 +1,12 @@
-getList :: Int -> [Int]
-getList n = [x^2 |x <-[0..n] ]
+powNum :: Float -> Int -> Float
+powNum _ 0 = 1
+powNum num pow = num * powNum num (pow - 1)
 
-lenList :: [Int] -> Int
-lenList [] = 0
-lenList (_:xs) = 1 + lenList xs
+factorialNum :: Int -> Int
+factorialNum 0 = 1
+factorialNum n = n * factorialNum (n - 1)
 
-main :: IO ()
-main = do
-    let myList = getList 5
-    print $ myList
-    putStrLn 'Длинна списка: ' ++ show lenList myList
+fibonacciNum :: Int -> Int
+fibonacciNum 0 = 0
+fibonacciNum 1 = 1
+fibonacciNum n = fibonacciNum (n-1) + fibonacciNum (n-2)
