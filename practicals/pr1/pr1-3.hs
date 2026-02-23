@@ -3,3 +3,7 @@ kvad x = x * x
 
 kvadvyr :: Num a => a -> a -> a -> a -> a
 kvadvyr a b c x = a * kvad x + b * x + c
+
+main :: IO ()
+main = do
+    print $ kvad 5
