@@ -1,4 +1,6 @@
-module Main where
+module Main (main) where
+
+import Game (runGame)
 
 main :: IO ()
-main = putStrLn "Hello, platformer!"
+main = runGame

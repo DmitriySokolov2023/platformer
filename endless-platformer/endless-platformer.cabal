@@ -42,7 +42,7 @@ maintainer:         sokolovoff2023@gmail.com
 build-type:         Simple
 
 -- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
-extra-doc-files:    CHANGELOG.md
+extra-doc-files:    README.md
 
 -- Extra source files to be distributed with the package, such as examples, or a tutorial module.
 -- extra-source-files:
@@ -59,10 +59,11 @@ executable endless-platformer
         Input,
         Generator,
         Config,
-        Database
+        Database,
+        Game.Constants
     build-depends:
         base >=4.14,
-        gloss >=1.13,
+        gloss ==1.13.2.2,
         random >=1.2,
         sqlite-simple >=0.4,
         directory
