@@ -9,4 +9,3 @@ main :: IO ()
 main = do
     let myList = getList 5
     print $ myList
-    putStrLn 'Длинна списка: ' ++show (lenList myList)
