@@ -1,0 +1,499 @@
+
+
+-- ============================================================
+-- Файл: dist-newstyle\build\x86_64-windows\ghc-9.6.7\endless-platformer-0.1.0.0\x\endless-platformer\build\endless-platformer\autogen\PackageInfo_endless_platformer.hs
+-- ============================================================
+
+{-# LANGUAGE NoRebindableSyntax #-}
+{-# OPTIONS_GHC -fno-warn-missing-import-lists #-}
+{-# OPTIONS_GHC -w #-}
+module PackageInfo_endless_platformer (
+    name,
+    version,
+    synopsis,
+    copyright,
+    homepage,
+  ) where
+
+import Data.Version (Version(..))
+import Prelude
+
+name :: String
+name = "endless_platformer"
+version :: Version
+version = Version [0,1,0,0] []
+
+synopsis :: String
+synopsis = ""
+copyright :: String
+copyright = ""
+homepage :: String
+homepage = ""
+
+
+
+-- ============================================================
+-- Файл: dist-newstyle\build\x86_64-windows\ghc-9.6.7\endless-platformer-0.1.0.0\x\endless-platformer\build\endless-platformer\autogen\Paths_endless_platformer.hs
+-- ============================================================
+
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE NoRebindableSyntax #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# OPTIONS_GHC -Wno-prepositive-qualified-module #-}
+#endif
+{-# OPTIONS_GHC -fno-warn-missing-import-lists #-}
+{-# OPTIONS_GHC -w #-}
+module Paths_endless_platformer (
+    version,
+    getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir,
+    getDataFileName, getSysconfDir
+  ) where
+
+
+import qualified Control.Exception as Exception
+import qualified Data.List as List
+import Data.Version (Version(..))
+import System.Environment (getEnv)
+import Prelude
+
+
+#if defined(VERSION_base)
+
+#if MIN_VERSION_base(4,0,0)
+catchIO :: IO a -> (Exception.IOException -> IO a) -> IO a
+#else
+catchIO :: IO a -> (Exception.Exception -> IO a) -> IO a
+#endif
+
+#else
+catchIO :: IO a -> (Exception.IOException -> IO a) -> IO a
+#endif
+catchIO = Exception.catch
+
+version :: Version
+version = Version [0,1,0,0] []
+
+getDataFileName :: FilePath -> IO FilePath
+getDataFileName name = do
+  dir <- getDataDir
+  return (dir `joinFileName` name)
+
+getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: IO FilePath
+
+
+
+
+bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
+bindir     = "C:\\cabal\\bin"
+libdir     = "C:\\cabal\\x86_64-windows-ghc-9.6.7\\endless-platformer-0.1.0.0-inplace-endless-platformer"
+dynlibdir  = "C:\\cabal\\x86_64-windows-ghc-9.6.7"
+datadir    = "C:\\cabal\\x86_64-windows-ghc-9.6.7\\endless-platformer-0.1.0.0"
+libexecdir = "C:\\cabal\\endless-platformer-0.1.0.0-inplace-endless-platformer\\x86_64-windows-ghc-9.6.7\\endless-platformer-0.1.0.0"
+sysconfdir = "C:\\cabal\\etc"
+
+getBinDir     = catchIO (getEnv "endless_platformer_bindir")     (\_ -> return bindir)
+getLibDir     = catchIO (getEnv "endless_platformer_libdir")     (\_ -> return libdir)
+getDynLibDir  = catchIO (getEnv "endless_platformer_dynlibdir")  (\_ -> return dynlibdir)
+getDataDir    = catchIO (getEnv "endless_platformer_datadir")    (\_ -> return datadir)
+getLibexecDir = catchIO (getEnv "endless_platformer_libexecdir") (\_ -> return libexecdir)
+getSysconfDir = catchIO (getEnv "endless_platformer_sysconfdir") (\_ -> return sysconfdir)
+
+
+
+joinFileName :: String -> String -> FilePath
+joinFileName ""  fname = fname
+joinFileName "." fname = fname
+joinFileName dir ""    = dir
+joinFileName dir fname
+  | isPathSeparator (List.last dir) = dir ++ fname
+  | otherwise                       = dir ++ pathSeparator : fname
+
+pathSeparator :: Char
+pathSeparator = '\\'
+
+isPathSeparator :: Char -> Bool
+isPathSeparator c = c == '/' || c == '\\'
+
+
+
+-- ============================================================
+-- Файл: src\Config.hs
+-- ============================================================
+
+module Config where
+
+
+-- ============================================================
+-- Файл: src\Database.hs
+-- ============================================================
+
+module Database where
+
+
+-- ============================================================
+-- Файл: src\Game.hs
+-- ============================================================
+
+module Game
+  ( runGame
+  ) where
+
+import Game.Constants
+import Graphics.Gloss
+import Graphics.Gloss.Interface.IO.Game
+import Input (handleInputEvent)
+import Render (drawAppIO)
+import System.Exit (exitSuccess)
+import World (App, Screen (Playing), appInput, appScreen, goTitle, initialApp, startPlaying, stepWorld)
+
+runGame :: IO ()
+runGame =
+  playIO
+    gameDisplay
+    backgroundColor
+    fps
+    initialApp
+    drawAppIO
+    handleEvent
+    stepApp
+
+gameDisplay :: Display
+gameDisplay = InWindow windowTitle (windowWidth, windowHeight) windowPos
+
+handleEvent :: Event -> App -> IO App
+handleEvent ev app =
+  case ev of
+    EventKey (SpecialKey KeyEsc) Down _ _ -> exitSuccess
+    EventKey (SpecialKey KeyEnter) Down _ _ -> pure (startPlaying app)
+    EventKey (SpecialKey KeyBackspace) Down _ _ ->
+      pure (goTitle app)
+    _ ->
+      pure (applyInput ev app)
+
+applyInput :: Event -> App -> App
+applyInput ev app =
+  case appScreen app of
+    Playing -> app {appInput = handleInputEvent ev (appInput app)}
+    _ -> app
+
+stepApp :: Float -> App -> IO App
+stepApp dt app =
+  pure (stepWorld dt app)
+
+
+-- ============================================================
+-- Файл: src\Generator.hs
+-- ============================================================
+
+module Generator where
+
+
+-- ============================================================
+-- Файл: src\Input.hs
+-- ============================================================
+
+module Input
+  ( handleInputEvent
+  ) where
+
+import Graphics.Gloss.Interface.IO.Game
+  ( Event (EventKey)
+  , Key (Char, SpecialKey)
+  , KeyState (Down)
+  , SpecialKey (KeyLeft, KeyRight)
+  )
+import World (InputState (..))
+
+handleInputEvent :: Event -> InputState -> InputState
+handleInputEvent ev st =
+  case ev of
+    EventKey key keyState _ _
+      | isLeftKey key -> st {inputLeft = keyState == Down}
+      | isRightKey key -> st {inputRight = keyState == Down}
+      | otherwise -> st
+    _ -> st
+
+isLeftKey :: Key -> Bool
+isLeftKey key =
+  key == SpecialKey KeyLeft || key == Char 'a' || key == Char 'A'
+
+isRightKey :: Key -> Bool
+isRightKey key =
+  key == SpecialKey KeyRight || key == Char 'd' || key == Char 'D'
+
+
+-- ============================================================
+-- Файл: src\Main.hs
+-- ============================================================
+
+module Main (main) where
+
+import Game (runGame)
+
+main :: IO ()
+main = runGame
+
+
+-- ============================================================
+-- Файл: src\Render.hs
+-- ============================================================
+
+module Render (drawAppIO) where
+
+import Graphics.Gloss
+
+import Game.Constants
+import World (App (..), Screen (..))
+
+drawAppIO :: App -> IO Picture
+drawAppIO = pure . drawApp
+
+drawApp :: App -> Picture
+drawApp app =
+  case appScreen app of
+    Title   -> drawTitle
+    Playing -> drawPlaying app
+
+drawTitle :: Picture
+drawTitle =
+  pictures
+    [ translate titleX titleY
+        $ scale titleScale titleScale
+        $ color titleColor
+        $ Text titleText
+    , translate hintX hintY
+        $ scale hintScale hintScale
+        $ color hintColor
+        $ Text hintText
+    ]
+
+drawPlaying :: App -> Picture
+drawPlaying app =
+  pictures
+    [ drawGround
+    , drawPlayer app
+    , drawPlayingUi
+    ]
+
+drawPlayingUi :: Picture
+drawPlayingUi =
+  pictures
+    [ translate playingX playingY
+        $ scale playingScale playingScale
+        $ color playingColor
+        $ Text playingText
+    , translate playingHintX playingHintY
+        $ scale playingHintScale playingHintScale
+        $ color playingHintColor
+        $ Text playingHintText
+    ]
+
+drawGround :: Picture
+drawGround =
+  translate 0 groundY
+    $ color groundColor
+    $ rectangleSolid (fromIntegral windowWidth) groundHeight
+
+drawPlayer :: App -> Picture
+drawPlayer app =
+  translate (playerX app) playerY
+    $ color playerColor
+    $ rectangleSolid playerWidth playerHeight
+
+
+-- ============================================================
+-- Файл: src\World.hs
+-- ============================================================
+
+module World
+  ( Screen (..), InputState (..), App (..), initialApp, startPlaying, goTitle, stepWorld
+  ) where
+
+import Game.Constants (moveSpeed, playerWidth, windowWidth)
+
+data Screen
+  = Title
+  | Playing
+  deriving (Eq, Show)
+
+data InputState = InputState
+  { inputLeft :: Bool,
+    inputRight :: Bool
+  }
+  deriving (Eq, Show)
+
+data App = App
+  { appScreen :: Screen,
+   appInput :: InputState,
+   playerX :: Float
+  }
+  deriving (Eq, Show)
+
+initialApp :: App
+initialApp =
+  App
+    { appScreen = Title
+    , appInput = InputState {inputLeft = False, inputRight = False}
+    , playerX = 0
+    }
+
+startPlaying :: App -> App
+startPlaying app =
+  case appScreen app of
+    Title ->
+      app
+        { appScreen = Playing
+        , appInput = InputState {inputLeft = False, inputRight = False}
+        , playerX = 0
+        }
+    Playing -> app
+
+goTitle :: App -> App
+goTitle app =
+  case appScreen app of
+    Playing ->
+      app
+        { appScreen = Title
+        , appInput = InputState {inputLeft = False, inputRight = False}
+        }
+    Title -> app
+
+stepWorld :: Float -> App -> App
+stepWorld dt app =
+  case appScreen app of
+    Title -> app
+    Playing -> movePlayer dt app
+
+movePlayer :: Float -> App -> App
+movePlayer dt app =
+  app {playerX = clamp minX maxX (playerX app + dx)}
+  where
+    dir = boolToFloat (inputRight (appInput app)) - boolToFloat (inputLeft (appInput app))
+    dx = dir * moveSpeed * dt
+    halfW = fromIntegral windowWidth / 2
+    halfPlayerW = playerWidth / 2
+    minX = -halfW + halfPlayerW
+    maxX = halfW - halfPlayerW
+
+boolToFloat :: Bool -> Float
+boolToFloat b =
+  if b then 1 else 0
+
+clamp :: Float -> Float -> Float -> Float
+clamp lo hi x
+  | x < lo = lo
+  | x > hi = hi
+  | otherwise = x
+
+
+-- ============================================================
+-- Файл: src\Game\Constants.hs
+-- ============================================================
+
+module Game.Constants
+  ( windowTitle, windowWidth, windowHeight, windowPos, backgroundColor, fps, titleText, titleX, titleY, titleScale, titleColor, hintText, hintX, hintY, hintScale, hintColor, playingText, playingX, playingY, playingScale, playingColor, playingHintText, playingHintX, playingHintY, playingHintScale, playingHintColor, playerWidth, playerHeight, playerY, playerColor, moveSpeed, groundY, groundHeight, groundColor
+  ) where
+
+import Graphics.Gloss (Color, greyN, makeColorI)
+
+windowTitle :: String
+windowTitle = "Endless Platformer"
+
+windowWidth :: Int
+windowWidth = 960
+
+windowHeight :: Int
+windowHeight = 540
+
+windowPos :: (Int, Int)
+windowPos = (100, 100)
+
+backgroundColor :: Color
+backgroundColor = greyN 0.1
+
+fps :: Int
+fps = 60
+
+titleText :: String
+titleText = "Endless Platformer"
+
+titleX :: Float
+titleX = -260
+
+titleY :: Float
+titleY = 40
+
+titleScale :: Float
+titleScale = 0.4
+
+titleColor :: Color
+titleColor = makeColorI 240 240 240 255
+
+hintText :: String
+hintText = "Press Enter  (Esc to quit)"
+
+hintX :: Float
+hintX = -220
+
+hintY :: Float
+hintY = -40
+
+hintScale :: Float
+hintScale = 0.2
+
+hintColor :: Color
+hintColor = makeColorI 200 200 200 255
+
+playingText :: String
+playingText = "Hold A/D or Left/Right to move"
+
+playingX :: Float
+playingX = -300
+
+playingY :: Float
+playingY = 200
+
+playingScale :: Float
+playingScale = 0.2
+
+playingColor :: Color
+playingColor = makeColorI 240 240 240 255
+
+playingHintText :: String
+playingHintText = "Backspace: title  |  Esc: quit"
+
+playingHintX :: Float
+playingHintX = -260
+
+playingHintY :: Float
+playingHintY = 160
+
+playingHintScale :: Float
+playingHintScale = 0.2
+
+playingHintColor :: Color
+playingHintColor = makeColorI 200 200 200 255
+
+playerWidth :: Float
+playerWidth = 40
+
+playerHeight :: Float
+playerHeight = 60
+
+playerY :: Float
+playerY = -140
+
+playerColor :: Color
+playerColor = makeColorI 255 200 80 255
+
+moveSpeed :: Float
+moveSpeed = 260
+
+groundY :: Float
+groundY = -200
+
+groundHeight :: Float
+groundHeight = 20
+
+groundColor :: Color
+groundColor = makeColorI 80 170 80 255

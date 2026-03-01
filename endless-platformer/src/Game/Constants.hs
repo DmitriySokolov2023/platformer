@@ -27,12 +27,25 @@ module Game.Constants
   , playingHintColor
   , playerWidth
   , playerHeight
-  , playerY
+  , playerStartY
+  , playerBaseX
+  , steerRange
   , playerColor
   , moveSpeed
+  , runSpeed
+  , metersPerPixel
+  , gravity
+  , jumpVelocity
   , groundY
+  , groundTopY
   , groundHeight
   , groundColor
+  , markSpacing
+  , markColor
+  , distanceX
+  , distanceY
+  , distanceScale
+  , distanceColor
   ) where
 
 import Graphics.Gloss (Color, greyN, makeColorI)
@@ -86,10 +99,10 @@ hintColor :: Color
 hintColor = makeColorI 200 200 200 255
 
 playingText :: String
-playingText = "Hold A/D or Left/Right to move"
+playingText = "A/D or Left/Right steer | Space/W/Up jump | Auto-run"
 
 playingX :: Float
-playingX = -300
+playingX = -360
 
 playingY :: Float
 playingY = 200
@@ -121,14 +134,35 @@ playerWidth = 40
 playerHeight :: Float
 playerHeight = 60
 
-playerY :: Float
-playerY = -140
-
 playerColor :: Color
 playerColor = makeColorI 255 200 80 255
 
+-- Runner tuning ------------------------------------------------
+
+playerBaseX :: Float
+playerBaseX = -300
+
+steerRange :: Float
+steerRange = 140
+
 moveSpeed :: Float
 moveSpeed = 260
+
+runSpeed :: Float
+runSpeed = 320
+
+metersPerPixel :: Float
+metersPerPixel = 0.10
+
+-- Physics ------------------------------------------------------
+
+gravity :: Float
+gravity = 1200
+
+jumpVelocity :: Float
+jumpVelocity = 520
+
+-- Ground -------------------------------------------------------
 
 groundY :: Float
 groundY = -200
@@ -136,5 +170,31 @@ groundY = -200
 groundHeight :: Float
 groundHeight = 20
 
+groundTopY :: Float
+groundTopY = groundY + groundHeight / 2
+
+playerStartY :: Float
+playerStartY = groundTopY + playerHeight / 2
+
 groundColor :: Color
 groundColor = makeColorI 80 170 80 255
+
+markSpacing :: Float
+markSpacing = 120
+
+markColor :: Color
+markColor = makeColorI 120 220 120 255
+
+-- HUD ----------------------------------------------------------
+
+distanceX :: Float
+distanceX = -440
+
+distanceY :: Float
+distanceY = 240
+
+distanceScale :: Float
+distanceScale = 0.18
+
+distanceColor :: Color
+distanceColor = makeColorI 240 240 240 255
