@@ -10,6 +10,16 @@
   (major1) == 0 && (major2) <  1 || \
   (major1) == 0 && (major2) == 1 && (minor) <= 0)
 #endif /* MIN_VERSION_endless_platformer */
+/* package aeson-2.2.3.0 */
+#ifndef VERSION_aeson
+#define VERSION_aeson "2.2.3.0"
+#endif /* VERSION_aeson */
+#ifndef MIN_VERSION_aeson
+#define MIN_VERSION_aeson(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  2 || \
+  (major1) == 2 && (major2) == 2 && (minor) <= 3)
+#endif /* MIN_VERSION_aeson */
 /* package base-4.18.3.0 */
 #ifndef VERSION_base
 #define VERSION_base "4.18.3.0"
@@ -20,6 +30,16 @@
   (major1) == 4 && (major2) <  18 || \
   (major1) == 4 && (major2) == 18 && (minor) <= 3)
 #endif /* MIN_VERSION_base */
+/* package bytestring-0.11.5.4 */
+#ifndef VERSION_bytestring
+#define VERSION_bytestring "0.11.5.4"
+#endif /* VERSION_bytestring */
+#ifndef MIN_VERSION_bytestring
+#define MIN_VERSION_bytestring(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  11 || \
+  (major1) == 0 && (major2) == 11 && (minor) <= 5)
+#endif /* MIN_VERSION_bytestring */
 /* package directory-1.3.8.5 */
 #ifndef VERSION_directory
 #define VERSION_directory "1.3.8.5"
@@ -30,6 +50,16 @@
   (major1) == 1 && (major2) <  3 || \
   (major1) == 1 && (major2) == 3 && (minor) <= 8)
 #endif /* MIN_VERSION_directory */
+/* package filepath-1.4.301.0 */
+#ifndef VERSION_filepath
+#define VERSION_filepath "1.4.301.0"
+#endif /* VERSION_filepath */
+#ifndef MIN_VERSION_filepath
+#define MIN_VERSION_filepath(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  4 || \
+  (major1) == 1 && (major2) == 4 && (minor) <= 301)
+#endif /* MIN_VERSION_filepath */
 /* package gloss-1.13.2.2 */
 #ifndef VERSION_gloss
 #define VERSION_gloss "1.13.2.2"
@@ -40,6 +70,16 @@
   (major1) == 1 && (major2) <  13 || \
   (major1) == 1 && (major2) == 13 && (minor) <= 2)
 #endif /* MIN_VERSION_gloss */
+/* package gloss-juicy-0.2.3 */
+#ifndef VERSION_gloss_juicy
+#define VERSION_gloss_juicy "0.2.3"
+#endif /* VERSION_gloss_juicy */
+#ifndef MIN_VERSION_gloss_juicy
+#define MIN_VERSION_gloss_juicy(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  2 || \
+  (major1) == 0 && (major2) == 2 && (minor) <= 3)
+#endif /* MIN_VERSION_gloss_juicy */
 /* package random-1.3.1 */
 #ifndef VERSION_random
 #define VERSION_random "1.3.1"
