@@ -1614,7 +1614,10 @@ stepPlaying dt app0 =
     jumpNow = inputJump inp0 && supported
     vy1 = if jumpNow then jumpVelocity else vy0
 
-    inp1 = inp0 {inputJump = False}
+    inp1 =
+      if jumpNow
+        then inp0 {inputJump = False}
+        else inp0
 
     vy2 = vy1 - gravity * dt
     y1 = y0 + vy2 * dt
@@ -1713,7 +1716,7 @@ isOnPlatform px y vy plats =
   any (onOne px bottomY vy) plats
   where
     bottomY = y - playerHeight / 2
-    eps = 0.6
+    eps = 2.0
 
     onOne x b v r =
       v <= 0.01
@@ -2068,7 +2071,7 @@ platformLift :: Float
 platformLift = 50
 
 platformEdgeInset :: Float
-platformEdgeInset = 6
+platformEdgeInset = 0
 
 platformColor :: Color
 platformColor = makeColorI 120 120 220 255
