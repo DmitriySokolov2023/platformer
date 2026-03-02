@@ -95,6 +95,14 @@ module Game.Constants
   , pauseHintText
   , pauseHintScale
   , pauseHintColor
+  ,dbFileName
+  ,leaderboardLimit
+  ,defaultPlayerName
+  ,scoreSavedText
+  , playerNameMaxLen
+  , saveSlotsCount
+  , defaultSaveSeed
+  ,pauseItem3Y 
   ) where
 
 import Graphics.Gloss (Color, greyN, makeColorI)
@@ -236,7 +244,7 @@ distanceColor :: Color
 distanceColor = makeColorI 240 240 240 255
 
 deathY :: Float
-deathY = -420
+deathY = -300
 
 maxLives :: Int
 maxLives = 3
@@ -387,3 +395,26 @@ pauseHintScale = 0.14
 
 pauseHintColor :: Color
 pauseHintColor = makeColorI 160 160 160 255
+
+dbFileName :: FilePath
+dbFileName = "game.db"
+
+leaderboardLimit :: Int
+leaderboardLimit = 10
+
+defaultPlayerName :: String
+defaultPlayerName = "Player"
+playerNameMaxLen :: Int
+playerNameMaxLen = 16
+
+scoreSavedText :: String
+scoreSavedText = "Score saved to leaderboard."
+
+saveSlotsCount :: Int
+saveSlotsCount = 3
+
+defaultSaveSeed :: Int
+defaultSaveSeed = 0
+
+pauseItem3Y :: Float
+pauseItem3Y = -56
