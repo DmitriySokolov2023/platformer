@@ -113,15 +113,22 @@ handleEvent ev app =
     EventKey (Char '\b') Down _ _ ->
       pure (handleBackspace app)
 
+    -- NEW: menu/back by Q
+    EventKey (Char 'q') Down _ _ ->
+      pure (handleQuitKey app)
+
+    EventKey (Char 'Q') Down _ _ ->
+      pure (handleQuitKey app)
+
+    -- Space in name entry (kept)
     EventKey (SpecialKey KeySpace) Down _ _
       | appScreen app == NameEntry ->
           pure (nameAddChar ' ' app)
 
+    -- NEW: normal character input in name entry
     EventKey (Char c) Down _ _
       | appScreen app == NameEntry ->
           pure (nameAddChar c app)
-      | c == 'q' || c == 'Q' ->
-          pure (goTitle app)
 
     EventKey key Down _ _
       | isDebugKey key ->
@@ -148,12 +155,30 @@ handleEvent ev app =
     _ ->
       pure (applyInput ev app)
 
+handleQuitKey :: App -> App
+handleQuitKey app =
+  case appScreen app of
+    NameEntry -> goTitle app
+    Controls -> goTitle app
+    Leaderboard -> goTitle app
+    LoadGame -> goTitle app
+    GameOver -> goTitle app
+    Playing -> goTitle app
+    Paused -> goTitle app
+    SaveGame -> app {appScreen = Paused, pauseIx = 0}
+    Title -> app
+    
 handleBackspace :: App -> App
 handleBackspace app =
   case appScreen app of
     NameEntry -> nameBackspace app
     LoadGame -> goTitle app
     SaveGame -> app {appScreen = Paused, pauseIx = 0}
+    Playing -> goTitle app          -- выход из игры в меню
+    Paused -> goTitle app           -- выход из паузы в меню
+    GameOver -> goTitle app         -- выход из GameOver в меню
+    Leaderboard -> goTitle app      -- выход из Leaderboard в меню
+    Controls -> goTitle app         -- выход из Controls в меню
     _ -> app
 
 isSlotScreen :: Screen -> Bool

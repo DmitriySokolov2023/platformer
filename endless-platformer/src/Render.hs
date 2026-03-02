@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Render (drawAppIO) where
 
 import Assets (Assets (..))
@@ -17,7 +19,7 @@ import Geometry
 import Graphics.Gloss
 import World (App (..), Difficulty (..), Screen (..), isSupported)
 import Database (ScoreRow(..), SaveRow(..))
-
+import Text.Printf (printf)
 drawAppIO :: Assets -> App -> IO Picture
 drawAppIO assets app = pure (drawApp assets app)
 
@@ -41,9 +43,9 @@ drawMenu app =
         $ scale titleScale titleScale
         $ color titleColor
         $ Text titleText
-    , drawMenuItem app 0 "Start Game" menuItemY0
-    , drawMenuItem app 1 ("Difficulty: " ++ show (appDifficulty app)) menuItemY1
-    , drawMenuItem app 2 "Leaderboard" menuItemY2
+    , drawMenuItem app 0 "START" menuItemY0
+    , drawMenuItem app 1 ("LEVEL: " ++ show (appDifficulty app)) menuItemY1
+    , drawMenuItem app 2 "TOP" menuItemY2
     , drawMenuItem app 3 "Load Game" menuItemY3
     , drawMenuItem app 4 "Exit" menuItemY4
     , translate menuHintX menuHintY
@@ -69,12 +71,12 @@ drawControls app =
   pictures
     [ translate (-160) 80
         $ scale 0.45 0.45
-        $ color (makeColorI 240 240 240 255)
+        $ color (makeColorI 200 255 0 255)
         $ Text "Controls"
     , translate (-420) 10
         $ scale 0.20 0.20
         $ color (makeColorI 230 230 230 255)
-        $ Text "A/D or Left/Right: steer"
+        $ Text "A/D or Left/Right: move"
     , translate (-420) (-20)
         $ scale 0.20 0.20
         $ color (makeColorI 230 230 230 255)
@@ -202,7 +204,7 @@ pauseHintX :: Float
 pauseHintX = -250
 
 pauseHintY :: Float
-pauseHintY = -78
+pauseHintY = -130
 
 drawGameOverText :: App -> Picture
 drawGameOverText app =
@@ -320,10 +322,10 @@ pct p =
 
 drawExitTopRight :: App -> Picture
 drawExitTopRight app =
-  translate (screenRight app - 60) (screenTop app - 30)
-    $ scale 0.20 0.20
+  translate (screenRight app - 80) (screenTop app - 30)
+    $ scale 0.15 0.15
     $ color (makeColorI 240 240 240 255)
-    $ Text "Exit"
+    $ Text "<-"
 
 drawGroundWithHoles :: App -> Float -> [Interval] -> Picture
 drawGroundWithHoles app cameraX holes =
@@ -480,11 +482,11 @@ screenTop app = fromIntegral (viewH app) / 2
 drawLoadGame :: App -> Picture
 drawLoadGame app =
   pictures
-    [ translate (-220) 120
+    [ translate (-220) 100
         $ scale 0.45 0.45
-        $ color (makeColorI 240 240 240 255)
+        $ color (makeColorI 200 255 0 255)
         $ Text "Load Game"
-    , translate (-420) 82
+    , translate (-380) (-200)
         $ scale 0.20 0.20
         $ color (makeColorI 200 200 200 255)
         $ Text "Up/Down: slot  |  Enter: load  |  Backspace: menu"
@@ -547,13 +549,13 @@ formatSlot slot mRow =
 drawLeaderboard :: App -> Picture
 drawLeaderboard app =
   pictures
-    [ translate (-240) 120
+    [ translate (-180) 120
         $ scale 0.45 0.45
-        $ color (makeColorI 240 240 240 255)
+        $ color (makeColorI 200 255 0 255)
         $ Text "Leaderboard"
-    , translate (-420) 82
+    , translate (-420) 60
         $ scale 0.20 0.20
-        $ color (makeColorI 200 200 200 255)
+        $ color (makeColorI 200 255 0 255 )
         $ Text "Top 10 (Backspace: menu)"
     , drawLeaderboardRows app
     , drawNotice app (-420) (-180)
@@ -563,7 +565,7 @@ drawLeaderboard app =
 drawLeaderboardRows :: App -> Picture
 drawLeaderboardRows app =
   pictures
-    [ translate (-420) (y0 - dy * fromIntegral i)
+    [ translate (-420) (y0 - dy * fromIntegral i -30)
         $ scale 0.18 0.18
         $ color (makeColorI 230 230 230 255)
         $ Text (formatRow (i + 1) row)
@@ -571,14 +573,15 @@ drawLeaderboardRows app =
     ]
   where
     y0 = 50
-    dy = 22
+    dy = 35
 
 formatRow :: Int -> ScoreRow -> String
 formatRow pos r =
-  show pos ++ ". "
-    ++ show (scoreDistance r) ++ " m  "
-    ++ scoreDifficulty r ++ "  "
-    ++ scorePlayerName r
+    printf "[%-2d] %6s m  %-10s  %-20s"
+           pos
+           (show (scoreDistance r))
+           (scoreDifficulty r)
+           (scorePlayerName r)
 
 drawNotice :: App -> Float -> Float -> Picture
 drawNotice app x y =
@@ -595,7 +598,7 @@ drawNameEntry app =
   pictures
     [ translate (-220) 110
         $ scale 0.42 0.42
-        $ color (makeColorI 240 240 240 255)
+        $ color (makeColorI 200 255 0 255)
         $ Text "Enter Name"
     , translate (-420) 50
         $ scale 0.20 0.20
@@ -605,9 +608,9 @@ drawNameEntry app =
         $ scale 0.28 0.28
         $ color (makeColorI 255 255 255 255)
         $ Text (appNameInput app ++ "_")
-    , translate (-420) (-60)
+    , translate (-320) (-200)
         $ scale 0.20 0.20
         $ color (makeColorI 200 200 200 255)
-        $ Text "Type to edit  |  Backspace: delete  |  Enter: start  |  Q: menu"
+        $ Text "Backspace: delete  |  Enter: start  |  Q: menu"
     , drawExitTopRight app
     ]

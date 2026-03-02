@@ -5,7 +5,7 @@
 	"speeds": {
 		"easy": { "base": 280, "growth": 2.0 },
 		"normal": { "base": 320, "growth": 3.0 },
-		"hard": { "base": 380, "growth": 4.0 }
+		"hard": { "base": 500, "growth": 4.0 }
 	},
 
 	"objects": {
