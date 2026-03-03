@@ -69,11 +69,11 @@ runGame :: IO ()
 runGame = do
   eCfg <- loadConfig "config.json"
   case eCfg of
-    Left err -> die err
+    Left err  -> die err
     Right cfg -> do
       eAssets <- loadAssets
       case eAssets of
-        Left err -> die err
+        Left err   -> die err
         Right assets -> do
           eDb <- initDb dbFileName
           case eDb of
@@ -95,7 +95,7 @@ handleEvent :: Event -> App -> IO App
 handleEvent ev app =
   case ev of
     EventResize (w, h) ->
-      pure app {viewW = w, viewH = h}
+      pure app { viewW = w, viewH = h }
 
     EventKey (SpecialKey KeyEsc) Down _ _ ->
       exitSuccess
@@ -103,9 +103,9 @@ handleEvent ev app =
     EventKey (SpecialKey KeyEnter) Down _ _ ->
       case appScreen app of
         NameEntry -> pure (nameConfirm app)
-        LoadGame -> pure (requestLoadSlot app)
-        SaveGame -> pure (requestSaveSlot app)
-        _ -> handleEnter app
+        LoadGame  -> pure (requestLoadSlot app)
+        SaveGame  -> pure (requestSaveSlot app)
+        _         -> handleEnter app
 
     EventKey (SpecialKey KeyBackspace) Down _ _ ->
       pure (handleBackspace app)
@@ -113,26 +113,23 @@ handleEvent ev app =
     EventKey (Char '\b') Down _ _ ->
       pure (handleBackspace app)
 
-    -- NEW: menu/back by Q
     EventKey (Char 'q') Down _ _ ->
       pure (handleQuitKey app)
 
     EventKey (Char 'Q') Down _ _ ->
       pure (handleQuitKey app)
 
-    -- Space in name entry (kept)
     EventKey (SpecialKey KeySpace) Down _ _
       | appScreen app == NameEntry ->
           pure (nameAddChar ' ' app)
 
-    -- NEW: normal character input in name entry
     EventKey (Char c) Down _ _
       | appScreen app == NameEntry ->
           pure (nameAddChar c app)
 
     EventKey key Down _ _
       | isDebugKey key ->
-          pure app {appShowDebug = not (appShowDebug app)}
+          pure app { appShowDebug = not (appShowDebug app) }
       | isPauseKey key ->
           pure (togglePause app)
       | isMenuUpKey key && appScreen app == Title ->
@@ -158,56 +155,53 @@ handleEvent ev app =
 handleQuitKey :: App -> App
 handleQuitKey app =
   case appScreen app of
-    NameEntry -> goTitle app
-    Controls -> goTitle app
+    NameEntry   -> goTitle app
+    Controls    -> goTitle app
     Leaderboard -> goTitle app
-    LoadGame -> goTitle app
-    GameOver -> goTitle app
-    Playing -> goTitle app
-    Paused -> goTitle app
-    SaveGame -> app {appScreen = Paused, pauseIx = 0}
-    Title -> app
-    
+    LoadGame    -> goTitle app
+    GameOver    -> goTitle app
+    Playing     -> goTitle app
+    Paused      -> goTitle app
+    SaveGame    -> app { appScreen = Paused, pauseIx = 0 }
+    Title       -> app
+
 handleBackspace :: App -> App
 handleBackspace app =
   case appScreen app of
-    NameEntry -> nameBackspace app
-    LoadGame -> goTitle app
-    SaveGame -> app {appScreen = Paused, pauseIx = 0}
-    Playing -> goTitle app          -- выход из игры в меню
-    Paused -> goTitle app           -- выход из паузы в меню
-    GameOver -> goTitle app         -- выход из GameOver в меню
-    Leaderboard -> goTitle app      -- выход из Leaderboard в меню
-    Controls -> goTitle app         -- выход из Controls в меню
-    _ -> app
+    NameEntry   -> nameBackspace app
+    LoadGame    -> goTitle app
+    SaveGame    -> app { appScreen = Paused, pauseIx = 0 }
+    Playing     -> goTitle app
+    Paused      -> goTitle app
+    GameOver    -> goTitle app
+    Leaderboard -> goTitle app
+    Controls    -> goTitle app
+    _           -> app
 
 isSlotScreen :: Screen -> Bool
-isSlotScreen s =
-  s == LoadGame || s == SaveGame
+isSlotScreen s = s == LoadGame || s == SaveGame
 
 handleEnter :: App -> IO App
 handleEnter app =
   case appScreen app of
     Title ->
       case menuIx app of
-        i | i == menuStartIx -> pure (startPlaying app)
-        i | i == menuDifficultyIx -> pure (menuAdjustDifficulty 1 app)
+        i | i == menuStartIx       -> pure (startPlaying app)
+        i | i == menuDifficultyIx  -> pure (menuAdjustDifficulty 1 app)
         i | i == menuLeaderboardIx -> pure (goLeaderboard app)
-        i | i == menuLoadIx -> pure (goLoadGame app)
-        i | i == menuExitIx -> exitSuccess
-        _ -> pure app
+        i | i == menuLoadIx        -> pure (goLoadGame app)
+        i | i == menuExitIx        -> exitSuccess
+        _                          -> pure app
     Paused ->
       pure (pauseActivate app)
     _ ->
       pure (startPlaying app)
 
 isDebugKey :: Key -> Bool
-isDebugKey key =
-  key == Char 't' || key == Char 'T'
+isDebugKey key = key == Char 't' || key == Char 'T'
 
 isPauseKey :: Key -> Bool
-isPauseKey key =
-  key == Char 'p' || key == Char 'P'
+isPauseKey key = key == Char 'p' || key == Char 'P'
 
 isMenuUpKey :: Key -> Bool
 isMenuUpKey key =
@@ -228,8 +222,8 @@ isMenuRightKey key =
 applyInput :: Event -> App -> App
 applyInput ev app =
   case appScreen app of
-    Playing -> app {appInput = handleInputEvent ev (appInput app)}
-    _ -> app
+    Playing -> app { appInput = handleInputEvent ev (appInput app) }
+    _       -> app
 
 stepApp :: Float -> App -> IO App
 stepApp dt app = do
@@ -255,17 +249,17 @@ performPendingDb app0 = do
 
   app4 <-
     case appPendingSaveSlot app3 of
-      Nothing -> pure app3
-      Just slot -> saveGameSlot slot app3
+      Nothing    -> pure app3
+      Just slot  -> saveGameSlot slot app3
 
   case appPendingLoadSlot app4 of
-    Nothing -> pure app4
-    Just slot -> loadGameSlot slot app4
+    Nothing    -> pure app4
+    Just slot  -> loadGameSlot slot app4
 
 saveScore :: App -> IO App
 saveScore app = do
   let meters = floor (worldScroll app * metersPerPixel) :: Int
-  let diff = show (appDifficulty app)
+  let diff   = show (appDifficulty app)
   e <- insertScore (appDbPath app) (appPlayerName app) meters diff
   case e of
     Left err ->
@@ -286,14 +280,14 @@ loadLeaderboard app = do
     Left err ->
       pure app
         { appPendingLbLoad = False
-        , appLeaderboard = []
-        , appNotice = Just err
+        , appLeaderboard   = []
+        , appNotice        = Just err
         }
     Right rows ->
       pure app
         { appPendingLbLoad = False
-        , appLeaderboard = rows
-        , appNotice = Nothing
+        , appLeaderboard   = rows
+        , appNotice        = Nothing
         }
 
 loadSavesList :: App -> IO App
@@ -303,14 +297,14 @@ loadSavesList app = do
     Left err ->
       pure app
         { appPendingSavesLoad = False
-        , appSaves = []
-        , appNotice = Just err
+        , appSaves            = []
+        , appNotice           = Just err
         }
     Right rows ->
       pure app
         { appPendingSavesLoad = False
-        , appSaves = rows
-        , appNotice = Nothing
+        , appSaves            = rows
+        , appNotice           = Nothing
         }
 
 saveGameSlot :: Int -> App -> IO App
@@ -325,16 +319,16 @@ saveGameSlot slot app = do
     Left err ->
       pure app
         { appPendingSaveSlot = Nothing
-        , appNotice = Just err
+        , appNotice          = Just err
         }
     Right () ->
       pure
         app
-          { appPendingSaveSlot = Nothing
-          , appPendingSavesLoad = True
-          , appNotice = Just ("Saved to slot " ++ show slot ++ ".")
-          , appScreen = Paused
-          , pauseIx = 0
+          { appPendingSaveSlot   = Nothing
+          , appPendingSavesLoad  = True
+          , appNotice            = Just ("Saved to slot " ++ show slot ++ ".")
+          , appScreen            = Paused
+          , pauseIx              = 0
           }
 
 loadGameSlot :: Int -> App -> IO App
@@ -344,14 +338,14 @@ loadGameSlot slot app = do
     Left err ->
       pure app
         { appPendingLoadSlot = Nothing
-        , appNotice = Just err
+        , appNotice          = Just err
         }
     Right row ->
       case applySaveRow row app of
         Left err ->
           pure app
             { appPendingLoadSlot = Nothing
-            , appNotice = Just err
+            , appNotice          = Just err
             }
         Right loaded ->
           pure loaded

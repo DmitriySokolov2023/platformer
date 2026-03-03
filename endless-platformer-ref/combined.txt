@@ -1,0 +1,2792 @@
+
+
+-- ============================================================
+-- Файл: dist-newstyle\build\x86_64-windows\ghc-9.6.7\endless-platformer-0.1.0.0\x\endless-platformer\build\endless-platformer\autogen\PackageInfo_endless_platformer.hs
+-- ============================================================
+
+{-# LANGUAGE NoRebindableSyntax #-}
+{-# OPTIONS_GHC -fno-warn-missing-import-lists #-}
+{-# OPTIONS_GHC -w #-}
+module PackageInfo_endless_platformer (
+    name,
+    version,
+    synopsis,
+    copyright,
+    homepage,
+  ) where
+
+import Data.Version (Version(..))
+import Prelude
+
+name :: String
+name = "endless_platformer"
+version :: Version
+version = Version [0,1,0,0] []
+
+synopsis :: String
+synopsis = ""
+copyright :: String
+copyright = ""
+homepage :: String
+homepage = ""
+
+
+
+-- ============================================================
+-- Файл: dist-newstyle\build\x86_64-windows\ghc-9.6.7\endless-platformer-0.1.0.0\x\endless-platformer\build\endless-platformer\autogen\Paths_endless_platformer.hs
+-- ============================================================
+
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE NoRebindableSyntax #-}
+#if __GLASGOW_HASKELL__ >= 810
+{-# OPTIONS_GHC -Wno-prepositive-qualified-module #-}
+#endif
+{-# OPTIONS_GHC -fno-warn-missing-import-lists #-}
+{-# OPTIONS_GHC -w #-}
+module Paths_endless_platformer (
+    version,
+    getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir,
+    getDataFileName, getSysconfDir
+  ) where
+
+
+import qualified Control.Exception as Exception
+import qualified Data.List as List
+import Data.Version (Version(..))
+import System.Environment (getEnv)
+import Prelude
+
+
+#if defined(VERSION_base)
+
+#if MIN_VERSION_base(4,0,0)
+catchIO :: IO a -> (Exception.IOException -> IO a) -> IO a
+#else
+catchIO :: IO a -> (Exception.Exception -> IO a) -> IO a
+#endif
+
+#else
+catchIO :: IO a -> (Exception.IOException -> IO a) -> IO a
+#endif
+catchIO = Exception.catch
+
+version :: Version
+version = Version [0,1,0,0] []
+
+getDataFileName :: FilePath -> IO FilePath
+getDataFileName name = do
+  dir <- getDataDir
+  return (dir `joinFileName` name)
+
+getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: IO FilePath
+
+
+
+
+bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
+bindir     = "C:\\cabal\\bin"
+libdir     = "C:\\cabal\\x86_64-windows-ghc-9.6.7\\endless-platformer-0.1.0.0-inplace-endless-platformer"
+dynlibdir  = "C:\\cabal\\x86_64-windows-ghc-9.6.7"
+datadir    = "C:\\cabal\\x86_64-windows-ghc-9.6.7\\endless-platformer-0.1.0.0"
+libexecdir = "C:\\cabal\\endless-platformer-0.1.0.0-inplace-endless-platformer\\x86_64-windows-ghc-9.6.7\\endless-platformer-0.1.0.0"
+sysconfdir = "C:\\cabal\\etc"
+
+getBinDir     = catchIO (getEnv "endless_platformer_bindir")     (\_ -> return bindir)
+getLibDir     = catchIO (getEnv "endless_platformer_libdir")     (\_ -> return libdir)
+getDynLibDir  = catchIO (getEnv "endless_platformer_dynlibdir")  (\_ -> return dynlibdir)
+getDataDir    = catchIO (getEnv "endless_platformer_datadir")    (\_ -> return datadir)
+getLibexecDir = catchIO (getEnv "endless_platformer_libexecdir") (\_ -> return libexecdir)
+getSysconfDir = catchIO (getEnv "endless_platformer_sysconfdir") (\_ -> return sysconfdir)
+
+
+
+joinFileName :: String -> String -> FilePath
+joinFileName ""  fname = fname
+joinFileName "." fname = fname
+joinFileName dir ""    = dir
+joinFileName dir fname
+  | isPathSeparator (List.last dir) = dir ++ fname
+  | otherwise                       = dir ++ pathSeparator : fname
+
+pathSeparator :: Char
+pathSeparator = '\\'
+
+isPathSeparator :: Char -> Bool
+isPathSeparator c = c == '/' || c == '\\'
+
+
+
+-- ============================================================
+-- Файл: src\Assets.hs
+-- ============================================================
+
+module Assets
+  ( Assets (..)
+  , loadAssets
+  ) where
+
+import Graphics.Gloss (Picture)
+import Graphics.Gloss.Juicy (loadJuicyPNG)
+import System.Directory (doesFileExist)
+import System.Environment (getExecutablePath)
+import System.FilePath ((</>), takeDirectory)
+
+data Assets = Assets
+  { assetsPlayerRun :: [Picture]
+  , assetsPlayerJump :: Picture
+  }
+
+loadAssets :: IO (Either String Assets)
+loadAssets = do
+  eRun <- loadMany runFiles
+  eJump <- loadPng jumpFile
+  pure $ do
+    runPics <- eRun
+    jumpPic <- eJump
+    if null runPics
+      then Left "Asset error: no player run frames loaded."
+      else
+        Right
+          Assets
+            { assetsPlayerRun = runPics
+            , assetsPlayerJump = jumpPic
+            }
+
+runFiles :: [FilePath]
+runFiles =
+  [ "assets/player_run_1.png"
+  , "assets/player_run_2.png"
+  , "assets/player_run_3.png"
+  , "assets/player_run_4.png"
+  , "assets/player_run_5.png"
+  , "assets/player_run_6.png"
+  , "assets/player_run_7.png"
+  , "assets/player_run_8.png"
+  ]
+
+jumpFile :: FilePath
+jumpFile = "assets/player_jump.png"
+
+loadMany :: [FilePath] -> IO (Either String [Picture])
+loadMany rels = sequence <$> mapM loadPng rels
+
+loadPng :: FilePath -> IO (Either String Picture)
+loadPng rel = do
+  ePath <- resolveAssetPath rel
+  case ePath of
+    Left err -> pure (Left err)
+    Right path -> do
+      mp <- loadJuicyPNG path
+      pure $
+        case mp of
+          Nothing -> Left ("Asset error: cannot decode PNG: " ++ rel)
+          Just p -> Right p
+
+resolveAssetPath :: FilePath -> IO (Either String FilePath)
+resolveAssetPath rel = do
+  exePath <- getExecutablePath
+  let exeDir = takeDirectory exePath
+  let candidates = [exeDir </> rel, rel]
+  pickExisting rel candidates
+
+pickExisting :: FilePath -> [FilePath] -> IO (Either String FilePath)
+pickExisting rel candidates =
+  go candidates
+  where
+    go [] = pure (Left (missingMsg rel candidates))
+    go (p : ps) = do
+      ok <- doesFileExist p
+      if ok then pure (Right p) else go ps
+
+missingMsg :: FilePath -> [FilePath] -> String
+missingMsg rel candidates =
+  unlines
+    ( [ "Asset error: cannot find file: " ++ rel
+      , "Tried:"
+      ]
+        ++ map ("  - " ++) candidates
+        ++ [ "Put 'assets/' next to the exe or run from project root."
+           ]
+    )
+
+
+
+-- ============================================================
+-- Файл: src\Config.hs
+-- ============================================================
+
+{-# LANGUAGE OverloadedStrings #-}
+
+module Config
+  ( GenConfig(..)
+  , SpeedRule(..)
+  , ObjectRule(..)
+  , loadConfig
+  , difficultyLevel
+  , objectChance
+  ) where
+
+import Control.Exception (IOException, catch, displayException)
+import Data.Aeson (FromJSON(parseJSON), eitherDecode', withObject, (.:))
+import qualified Data.ByteString.Lazy as BL
+import System.Directory (doesFileExist)
+import System.Environment (getExecutablePath)
+import System.FilePath ((</>), takeDirectory)
+
+data SpeedRule = SpeedRule
+  { speedBase :: Float
+  , speedGrowth :: Float
+  }
+  deriving (Eq, Show)
+
+data ObjectRule = ObjectRule
+  { objEnabled :: Bool
+  , objMinDifficulty :: Int
+  , objBaseRate :: Float
+  , objGrowth :: Float
+  }
+  deriving (Eq, Show)
+
+data GenConfig = GenConfig
+  { cfgDifficultyStepPx :: Float
+  , cfgSafeChunks :: Int
+  , cfgEasySpeed :: SpeedRule
+  , cfgNormalSpeed :: SpeedRule
+  , cfgHardSpeed :: SpeedRule
+  , cfgHoleRule :: ObjectRule
+  , cfgSpikeRule :: ObjectRule
+  , cfgMedkitRule :: ObjectRule
+  , cfgBridgeBaseChance :: Float
+  , cfgBridgeDecayPerLevel :: Float
+  , cfgExtraPlatformChance :: Float
+  }
+  deriving (Eq, Show)
+
+instance FromJSON SpeedRule where
+  parseJSON = withObject "SpeedRule" $ \o ->
+    SpeedRule <$> o .: "base" <*> o .: "growth"
+
+instance FromJSON ObjectRule where
+  parseJSON = withObject "ObjectRule" $ \o ->
+    ObjectRule
+      <$> o .: "enabled"
+      <*> o .: "minDifficulty"
+      <*> o .: "baseRate"
+      <*> o .: "growth"
+
+instance FromJSON GenConfig where
+  parseJSON = withObject "GenConfig" $ \o -> do
+    stepPx <- o .: "difficultyStepPx"
+    safeChunks <- o .: "safeChunks"
+
+    speedsObj <- o .: "speeds"
+    easySp <- speedsObj .: "easy"
+    normalSp <- speedsObj .: "normal"
+    hardSp <- speedsObj .: "hard"
+
+    objs <- o .: "objects"
+    hole <- objs .: "hole"
+    spike <- objs .: "spike"
+    medkit <- objs .: "medkit"
+
+    bridgeBase <- o .: "bridgeBaseChance"
+    bridgeDecay <- o .: "bridgeDecayPerLevel"
+    extraPlat <- o .: "extraPlatformChance"
+
+    pure
+      GenConfig
+        { cfgDifficultyStepPx = stepPx
+        , cfgSafeChunks = safeChunks
+        , cfgEasySpeed = easySp
+        , cfgNormalSpeed = normalSp
+        , cfgHardSpeed = hardSp
+        , cfgHoleRule = hole
+        , cfgSpikeRule = spike
+        , cfgMedkitRule = medkit
+        , cfgBridgeBaseChance = bridgeBase
+        , cfgBridgeDecayPerLevel = bridgeDecay
+        , cfgExtraPlatformChance = extraPlat
+        }
+
+loadConfig :: FilePath -> IO (Either String GenConfig)
+loadConfig rel = do
+  ePath <- resolveConfigPath rel
+  case ePath of
+    Left err -> pure (Left err)
+    Right path -> do
+      eBs <- readFileEither path
+      case eBs of
+        Left err -> pure (Left err)
+        Right bs ->
+          case eitherDecode' bs of
+            Left parseErr ->
+              pure
+                ( Left
+                    ( unlines
+                        [ "Config error: cannot parse JSON: " ++ path
+                        , parseErr
+                        ]
+                    )
+                )
+            Right cfg ->
+              pure (validateConfig cfg)
+
+difficultyLevel :: GenConfig -> Float -> Int
+difficultyLevel cfg distPx =
+  floor (distPx / cfgDifficultyStepPx cfg)
+
+objectChance :: ObjectRule -> Int -> Float
+objectChance rule lvl
+  | not (objEnabled rule) = 0
+  | lvl < objMinDifficulty rule = 0
+  | otherwise =
+      clamp01
+        ( objBaseRate rule
+            + objGrowth rule
+              * fromIntegral (lvl - objMinDifficulty rule)
+        )
+
+validateConfig :: GenConfig -> Either String GenConfig
+validateConfig cfg = do
+  checkPos "difficultyStepPx" (cfgDifficultyStepPx cfg)
+  checkNonNegInt "safeChunks" (cfgSafeChunks cfg)
+
+  checkSpeed "speeds.easy" (cfgEasySpeed cfg)
+  checkSpeed "speeds.normal" (cfgNormalSpeed cfg)
+  checkSpeed "speeds.hard" (cfgHardSpeed cfg)
+
+  checkObj "objects.hole" (cfgHoleRule cfg)
+  checkObj "objects.spike" (cfgSpikeRule cfg)
+  checkObj "objects.medkit" (cfgMedkitRule cfg)
+
+  checkRate "bridgeBaseChance" (cfgBridgeBaseChance cfg)
+  checkNonNeg "bridgeDecayPerLevel" (cfgBridgeDecayPerLevel cfg)
+  checkRate "extraPlatformChance" (cfgExtraPlatformChance cfg)
+
+  pure cfg
+
+checkSpeed :: String -> SpeedRule -> Either String ()
+checkSpeed prefix s = do
+  checkPos (prefix ++ ".base") (speedBase s)
+  checkNonNeg (prefix ++ ".growth") (speedGrowth s)
+
+checkObj :: String -> ObjectRule -> Either String ()
+checkObj prefix o = do
+  checkNonNegInt (prefix ++ ".minDifficulty") (objMinDifficulty o)
+  checkRate (prefix ++ ".baseRate") (objBaseRate o)
+  checkNonNeg (prefix ++ ".growth") (objGrowth o)
+
+checkPos :: String -> Float -> Either String ()
+checkPos name x =
+  if x > 0
+    then Right ()
+    else Left ("Config error: " ++ name ++ " must be > 0.")
+
+checkNonNeg :: String -> Float -> Either String ()
+checkNonNeg name x =
+  if x >= 0
+    then Right ()
+    else Left ("Config error: " ++ name ++ " must be >= 0.")
+
+checkRate :: String -> Float -> Either String ()
+checkRate name x
+  | x < 0 = Left ("Config error: " ++ name ++ " must be >= 0.")
+  | x > 1 = Left ("Config error: " ++ name ++ " must be <= 1.")
+  | otherwise = Right ()
+
+checkNonNegInt :: String -> Int -> Either String ()
+checkNonNegInt name x =
+  if x >= 0
+    then Right ()
+    else Left ("Config error: " ++ name ++ " must be >= 0.")
+
+resolveConfigPath :: FilePath -> IO (Either String FilePath)
+resolveConfigPath rel = do
+  exePath <- getExecutablePath
+  let exeDir = takeDirectory exePath
+  let candidates = [exeDir </> rel, rel]
+  pickExisting rel candidates
+
+pickExisting :: FilePath -> [FilePath] -> IO (Either String FilePath)
+pickExisting rel candidates =
+  go candidates
+  where
+    go [] = pure (Left (missingMsg rel candidates))
+    go (p : ps) = do
+      ok <- doesFileExist p
+      if ok then pure (Right p) else go ps
+
+missingMsg :: FilePath -> [FilePath] -> String
+missingMsg rel candidates =
+  unlines
+    ( [ "Config error: cannot find file: " ++ rel
+      , "Tried:"
+      ]
+        ++ map ("  - " ++) candidates
+        ++ [ "Put the config next to the exe or run from project root."
+           ]
+    )
+
+readFileEither :: FilePath -> IO (Either String BL.ByteString)
+readFileEither path =
+  (Right <$> BL.readFile path) `catch` handle
+  where
+    handle :: IOException -> IO (Either String BL.ByteString)
+    handle e =
+      pure
+        ( Left
+            ( unlines
+                [ "Config error: cannot read file: " ++ path
+                , displayException e
+                ]
+            )
+        )
+
+clamp01 :: Float -> Float
+clamp01 x
+  | x < 0 = 0
+  | x > 1 = 1
+  | otherwise = x
+
+
+
+-- ============================================================
+-- Файл: src\Database.hs
+-- ============================================================
+
+{-# LANGUAGE OverloadedStrings #-}
+
+module Database
+  ( ScoreRow(..)
+  , SaveRow(..)
+  , initDb
+  , insertScore
+  , getTopScores
+  , upsertSave
+  , loadSave
+  , listSaves
+  ) where
+
+import Control.Exception (SomeException, bracket, displayException, try)
+import Database.SQLite.Simple
+  ( Connection
+  , Only(..)
+  , Query
+  , close
+  , execute
+  , execute_
+  , open
+  , query
+  , query_
+  )
+import Database.SQLite.Simple.FromRow (FromRow(..), field)
+
+data ScoreRow = ScoreRow
+  { scoreId :: Int
+  , scorePlayerName :: String
+  , scoreDistance :: Int
+  , scoreDifficulty :: String
+  , scoreCreatedAt :: String
+  }
+  deriving (Eq, Show)
+
+instance FromRow ScoreRow where
+  fromRow =
+    ScoreRow <$> field <*> field <*> field <*> field <*> field
+
+data SaveRow = SaveRow
+  { saveSlot :: Int
+  , saveSeed :: Int
+  , saveWorldScroll :: Float
+  , saveLives :: Int
+  , saveDifficulty :: String
+  , saveCreatedAt :: String
+  }
+  deriving (Eq, Show)
+
+instance FromRow SaveRow where
+  fromRow =
+    SaveRow <$> field <*> field <*> field <*> field <*> field <*> field
+
+initDb :: FilePath -> IO (Either String ())
+initDb path =
+  fmap (fmap (const ())) $
+    withConn path $ \conn -> do
+      execute_ conn "PRAGMA foreign_keys = ON;"
+      execute_ conn createScoresSql
+      execute_ conn createSavesSql
+
+insertScore :: FilePath -> String -> Int -> String -> IO (Either String ())
+insertScore path name dist diff =
+  fmap (fmap (const ())) $
+    withConn path $ \conn ->
+      execute conn
+        "INSERT INTO scores(player_name, distance, difficulty) VALUES (?,?,?)"
+        (name, dist, diff)
+
+getTopScores :: FilePath -> Int -> IO (Either String [ScoreRow])
+getTopScores path limitN =
+  withConn path $ \conn ->
+    query conn
+      "SELECT id, player_name, distance, difficulty, created_at \
+      \FROM scores ORDER BY distance DESC, id DESC LIMIT ?"
+      (Only limitN)
+
+upsertSave :: FilePath -> Int -> Int -> Float -> Int -> String -> IO (Either String ())
+upsertSave path slot seed scroll lives diff =
+  fmap (fmap (const ())) $
+    withConn path $ \conn ->
+      execute conn
+        "INSERT OR REPLACE INTO saves(slot, seed, world_scroll, lives, difficulty) \
+        \VALUES (?,?,?,?,?)"
+        (slot, seed, scroll, lives, diff)
+
+loadSave :: FilePath -> Int -> IO (Either String SaveRow)
+loadSave path slot = do
+  eRows <-
+    withConn path $ \conn ->
+      query conn
+        "SELECT slot, seed, world_scroll, lives, difficulty, created_at \
+        \FROM saves WHERE slot = ?"
+        (Only slot)
+  pure $ do
+    rows <- eRows
+    expectOne ("No save in slot " ++ show slot ++ ".") rows
+
+listSaves :: FilePath -> IO (Either String [SaveRow])
+listSaves path =
+  withConn path $ \conn ->
+    query_ conn
+      "SELECT slot, seed, world_scroll, lives, difficulty, created_at \
+      \FROM saves ORDER BY slot"
+
+expectOne :: String -> [a] -> Either String a
+expectOne msg xs =
+  case xs of
+    [x] -> Right x
+    [] -> Left msg
+    _ -> Left "DB error: expected one row, got many."
+
+withConn :: FilePath -> (Connection -> IO a) -> IO (Either String a)
+withConn path action = do
+  r <- try (bracket (open path) close action)
+  pure $
+    case r of
+      Left e -> Left (dbErr path e)
+      Right x -> Right x
+
+dbErr :: FilePath -> SomeException -> String
+dbErr path e =
+  unlines
+    [ "DB error: " ++ path
+    , displayException e
+    ]
+
+createScoresSql :: Database.SQLite.Simple.Query
+createScoresSql =
+  "CREATE TABLE IF NOT EXISTS scores (\
+  \ id INTEGER PRIMARY KEY AUTOINCREMENT,\
+  \ player_name TEXT NOT NULL,\
+  \ distance INTEGER NOT NULL,\
+  \ difficulty TEXT NOT NULL,\
+  \ created_at TEXT NOT NULL DEFAULT (datetime('now'))\
+  \);"
+
+createSavesSql :: Database.SQLite.Simple.Query
+createSavesSql =
+  "CREATE TABLE IF NOT EXISTS saves (\
+  \ slot INTEGER PRIMARY KEY,\
+  \ seed INTEGER NOT NULL,\
+  \ world_scroll REAL NOT NULL,\
+  \ lives INTEGER NOT NULL,\
+  \ difficulty TEXT NOT NULL,\
+  \ created_at TEXT NOT NULL DEFAULT (datetime('now'))\
+  \);"
+
+
+
+-- ============================================================
+-- Файл: src\Game.hs
+-- ============================================================
+
+module Game
+  ( runGame
+  ) where
+
+import Assets (loadAssets)
+import Config (loadConfig)
+import Database
+  ( getTopScores
+  , initDb
+  , insertScore
+  , listSaves
+  , loadSave
+  , upsertSave
+  )
+import Game.Constants
+  ( backgroundColor
+  , dbFileName
+  , defaultSaveSeed
+  , fps
+  , leaderboardLimit
+  , metersPerPixel
+  , scoreSavedText
+  , windowHeight
+  , windowPos
+  , windowTitle
+  , windowWidth
+  )
+import Graphics.Gloss (Display (InWindow))
+import Graphics.Gloss.Interface.IO.Game
+  ( Event (..)
+  , Key (..)
+  , KeyState (Down)
+  , SpecialKey (..)
+  , playIO
+  )
+import Input (handleInputEvent)
+import Render (drawAppIO)
+import System.Exit (die, exitSuccess)
+import World
+  ( App (..)
+  , Screen (..)
+  , applySaveRow
+  , goLeaderboard
+  , goLoadGame
+  , goTitle
+  , initialApp
+  , menuAdjustDifficulty
+  , menuDifficultyIx
+  , menuExitIx
+  , menuIx
+  , menuLeaderboardIx
+  , menuLoadIx
+  , menuMove
+  , menuStartIx
+  , nameAddChar
+  , nameBackspace
+  , nameConfirm
+  , pauseActivate
+  , pauseMove
+  , requestLoadSlot
+  , requestSaveSlot
+  , slotMove
+  , startPlaying
+  , stepWorld
+  , togglePause
+  )
+
+runGame :: IO ()
+runGame = do
+  eCfg <- loadConfig "config.json"
+  case eCfg of
+    Left err -> die err
+    Right cfg -> do
+      eAssets <- loadAssets
+      case eAssets of
+        Left err -> die err
+        Right assets -> do
+          eDb <- initDb dbFileName
+          case eDb of
+            Left err -> die err
+            Right () ->
+              playIO
+                gameDisplay
+                backgroundColor
+                fps
+                (initialApp cfg dbFileName)
+                (drawAppIO assets)
+                handleEvent
+                stepApp
+
+gameDisplay :: Display
+gameDisplay = InWindow windowTitle (windowWidth, windowHeight) windowPos
+
+handleEvent :: Event -> App -> IO App
+handleEvent ev app =
+  case ev of
+    EventResize (w, h) ->
+      pure app {viewW = w, viewH = h}
+
+    EventKey (SpecialKey KeyEsc) Down _ _ ->
+      exitSuccess
+
+    EventKey (SpecialKey KeyEnter) Down _ _ ->
+      case appScreen app of
+        NameEntry -> pure (nameConfirm app)
+        LoadGame -> pure (requestLoadSlot app)
+        SaveGame -> pure (requestSaveSlot app)
+        _ -> handleEnter app
+
+    EventKey (SpecialKey KeyBackspace) Down _ _ ->
+      pure (handleBackspace app)
+
+    EventKey (Char '\b') Down _ _ ->
+      pure (handleBackspace app)
+
+    EventKey (Char 'q') Down _ _ ->
+      pure (handleQuitKey app)
+
+    EventKey (Char 'Q') Down _ _ ->
+      pure (handleQuitKey app)
+
+    EventKey (SpecialKey KeySpace) Down _ _
+      | appScreen app == NameEntry ->
+          pure (nameAddChar ' ' app)
+
+    EventKey (Char c) Down _ _
+      | appScreen app == NameEntry ->
+          pure (nameAddChar c app)
+
+    EventKey key Down _ _
+      | isDebugKey key ->
+          pure app {appShowDebug = not (appShowDebug app)}
+      | isPauseKey key ->
+          pure (togglePause app)
+      | isMenuUpKey key && appScreen app == Title ->
+          pure (menuMove (-1) app)
+      | isMenuDownKey key && appScreen app == Title ->
+          pure (menuMove 1 app)
+      | isMenuLeftKey key && appScreen app == Title ->
+          pure (menuAdjustDifficulty (-1) app)
+      | isMenuRightKey key && appScreen app == Title ->
+          pure (menuAdjustDifficulty 1 app)
+      | isMenuUpKey key && isSlotScreen (appScreen app) ->
+          pure (slotMove (-1) app)
+      | isMenuDownKey key && isSlotScreen (appScreen app) ->
+          pure (slotMove 1 app)
+      | isMenuUpKey key && appScreen app == Paused ->
+          pure (pauseMove (-1) app)
+      | isMenuDownKey key && appScreen app == Paused ->
+          pure (pauseMove 1 app)
+
+    _ ->
+      pure (applyInput ev app)
+
+handleQuitKey :: App -> App
+handleQuitKey app =
+  case appScreen app of
+    Title -> app
+    _ -> goTitle app
+
+handleBackspace :: App -> App
+handleBackspace app =
+  case appScreen app of
+    NameEntry -> nameBackspace app
+    SaveGame -> app {appScreen = Paused, pauseIx = 0}
+    Title -> app
+    _ -> goTitle app
+
+isSlotScreen :: Screen -> Bool
+isSlotScreen s =
+  s == LoadGame || s == SaveGame
+
+handleEnter :: App -> IO App
+handleEnter app =
+  case appScreen app of
+    Title ->
+      case menuIx app of
+        i | i == menuStartIx -> pure (startPlaying app)
+        i | i == menuDifficultyIx -> pure (menuAdjustDifficulty 1 app)
+        i | i == menuLeaderboardIx -> pure (goLeaderboard app)
+        i | i == menuLoadIx -> pure (goLoadGame app)
+        i | i == menuExitIx -> exitSuccess
+        _ -> pure app
+    Paused ->
+      pure (pauseActivate app)
+    _ ->
+      pure (startPlaying app)
+
+isDebugKey :: Key -> Bool
+isDebugKey key =
+  key == Char 't' || key == Char 'T'
+
+isPauseKey :: Key -> Bool
+isPauseKey key =
+  key == Char 'p' || key == Char 'P'
+
+isMenuUpKey :: Key -> Bool
+isMenuUpKey key =
+  key == SpecialKey KeyUp || key == Char 'w' || key == Char 'W'
+
+isMenuDownKey :: Key -> Bool
+isMenuDownKey key =
+  key == SpecialKey KeyDown || key == Char 's' || key == Char 'S'
+
+isMenuLeftKey :: Key -> Bool
+isMenuLeftKey key =
+  key == SpecialKey KeyLeft || key == Char 'a' || key == Char 'A'
+
+isMenuRightKey :: Key -> Bool
+isMenuRightKey key =
+  key == SpecialKey KeyRight || key == Char 'd' || key == Char 'D'
+
+applyInput :: Event -> App -> App
+applyInput ev app =
+  case appScreen app of
+    Playing -> app {appInput = handleInputEvent ev (appInput app)}
+    _ -> app
+
+stepApp :: Float -> App -> IO App
+stepApp dt app = do
+  let app1 = stepWorld dt app
+  performPendingDb app1
+
+performPendingDb :: App -> IO App
+performPendingDb app0 = do
+  app1 <-
+    if appPendingScoreSave app0
+      then saveScore app0
+      else pure app0
+
+  app2 <-
+    if appPendingLbLoad app1
+      then loadLeaderboard app1
+      else pure app1
+
+  app3 <-
+    if appPendingSavesLoad app2
+      then loadSavesList app2
+      else pure app2
+
+  app4 <-
+    case appPendingSaveSlot app3 of
+      Nothing -> pure app3
+      Just slot -> saveGameSlot slot app3
+
+  case appPendingLoadSlot app4 of
+    Nothing -> pure app4
+    Just slot -> loadGameSlot slot app4
+
+saveScore :: App -> IO App
+saveScore app = do
+  let meters = floor (worldScroll app * metersPerPixel) :: Int
+  let diff = show (appDifficulty app)
+  e <- insertScore (appDbPath app) (appPlayerName app) meters diff
+  case e of
+    Left err ->
+      pure app
+        { appPendingScoreSave = False
+        , appNotice = Just err
+        }
+    Right () ->
+      pure app
+        { appPendingScoreSave = False
+        , appNotice = Just scoreSavedText
+        }
+
+loadLeaderboard :: App -> IO App
+loadLeaderboard app = do
+  e <- getTopScores (appDbPath app) leaderboardLimit
+  case e of
+    Left err ->
+      pure app
+        { appPendingLbLoad = False
+        , appLeaderboard = []
+        , appNotice = Just err
+        }
+    Right rows ->
+      pure app
+        { appPendingLbLoad = False
+        , appLeaderboard = rows
+        , appNotice = Nothing
+        }
+
+loadSavesList :: App -> IO App
+loadSavesList app = do
+  e <- listSaves (appDbPath app)
+  case e of
+    Left err ->
+      pure app
+        { appPendingSavesLoad = False
+        , appSaves = []
+        , appNotice = Just err
+        }
+    Right rows ->
+      pure app
+        { appPendingSavesLoad = False
+        , appSaves = rows
+        , appNotice = Nothing
+        }
+
+saveGameSlot :: Int -> App -> IO App
+saveGameSlot slot app = do
+  let diff = show (appDifficulty app)
+  e <-
+    upsertSave (appDbPath app) slot defaultSaveSeed
+      (worldScroll app)
+      (playerLives app)
+      diff
+  case e of
+    Left err ->
+      pure app
+        { appPendingSaveSlot = Nothing
+        , appNotice = Just err
+        }
+    Right () ->
+      pure
+        app
+          { appPendingSaveSlot = Nothing
+          , appPendingSavesLoad = True
+          , appNotice = Just ("Saved to slot " ++ show slot ++ ".")
+          , appScreen = Paused
+          , pauseIx = 0
+          }
+
+loadGameSlot :: Int -> App -> IO App
+loadGameSlot slot app = do
+  e <- loadSave (appDbPath app) slot
+  case e of
+    Left err ->
+      pure app
+        { appPendingLoadSlot = Nothing
+        , appNotice = Just err
+        }
+    Right row ->
+      case applySaveRow row app of
+        Left err ->
+          pure app
+            { appPendingLoadSlot = Nothing
+            , appNotice = Just err
+            }
+        Right loaded ->
+          pure loaded
+
+
+
+-- ============================================================
+-- Файл: src\Generator.hs
+-- ============================================================
+
+module Generator
+  ( ensureChunks
+  , generateChunk
+  , chunkStartX
+  ) where
+
+import Config
+  ( GenConfig(..)
+  , difficultyLevel
+  , objectChance
+  )
+import Game.Constants
+  ( chunkWidth
+  , groundTopY
+  , holeWidth
+  , medkitH
+  , medkitLift
+  , medkitW
+  , platformH
+  , platformLift
+  , platformW
+  , spawnAhead
+  , spikeH
+  , spikeW
+  )
+import Geometry
+  ( Interval(..)
+  , Rect(..)
+  , intervalContains
+  , rectLeft
+  , rectRight
+  , rectTop
+  )
+
+data ChunkTemplate
+  = TemplateA
+  | TemplateB
+  | TemplateC
+  deriving (Eq, Show)
+
+ensureChunks
+  :: GenConfig
+  -> Float
+  -> Int
+  -> [Interval]
+  -> [Rect]
+  -> [Rect]
+  -> [Rect]
+  -> (Int, [Interval], [Rect], [Rect], [Rect])
+ensureChunks cfg scroll ix holes plats spikes meds
+  | chunkStartX ix < scroll + spawnAhead =
+      ensureChunks cfg scroll (ix + 1)
+        (holes ++ hs)
+        (plats ++ ps)
+        (spikes ++ ss)
+        (meds ++ ms)
+  | otherwise =
+      (ix, holes, plats, spikes, meds)
+  where
+    (hs, ps, ss, ms) = generateChunk cfg ix
+
+chunkStartX :: Int -> Float
+chunkStartX ix = fromIntegral ix * chunkWidth
+
+generateChunk :: GenConfig -> Int -> ([Interval], [Rect], [Rect], [Rect])
+generateChunk cfg ix
+  | ix < cfgSafeChunks cfg = ([], [], [], [])
+  | otherwise =
+      case templateFor ix of
+        TemplateA -> genFromTemplate cfg ix specA
+        TemplateB -> genFromTemplate cfg ix specB
+        TemplateC -> genFromTemplate cfg ix specC
+
+templateFor :: Int -> ChunkTemplate
+templateFor ix =
+  case ix `mod` 3 of
+    0 -> TemplateA
+    1 -> TemplateB
+    _ -> TemplateC
+
+data TemplateSpec = TemplateSpec
+  { tsHoleStartOff :: Float
+  , tsHoleExtraStep :: Float
+  , tsSpikeOffs :: [Float]
+  , tsMedkitOffs :: [Float]
+  , tsExtraPlatXOff :: Float
+  }
+
+specA :: TemplateSpec
+specA =
+  TemplateSpec
+    { tsHoleStartOff = 240
+    , tsHoleExtraStep = 40
+    , tsSpikeOffs = [320, 520]
+    , tsMedkitOffs = [430]
+    , tsExtraPlatXOff = 560
+    }
+
+specB :: TemplateSpec
+specB =
+  TemplateSpec
+    { tsHoleStartOff = 220
+    , tsHoleExtraStep = 40
+    , tsSpikeOffs = [320, 480, 630]
+    , tsMedkitOffs = [410, 590]
+    , tsExtraPlatXOff = 560
+    }
+
+specC :: TemplateSpec
+specC =
+  TemplateSpec
+    { tsHoleStartOff = 260
+    , tsHoleExtraStep = 60
+    , tsSpikeOffs = [260, 420, 580]
+    , tsMedkitOffs = [350, 520]
+    , tsExtraPlatXOff = 500
+    }
+
+genFromTemplate
+  :: GenConfig
+  -> Int
+  -> TemplateSpec
+  -> ([Interval], [Rect], [Rect], [Rect])
+genFromTemplate cfg ix spec =
+  (holes, plats, spikes, medkits)
+  where
+    baseX = chunkStartX ix
+    lvl = difficultyLevel cfg baseX
+
+    holeP = objectChance (cfgHoleRule cfg) lvl
+    spikeP = objectChance (cfgSpikeRule cfg) lvl
+    medP = objectChance (cfgMedkitRule cfg) lvl
+
+    hasHole = rand01 ix 1 < holeP
+    holeExtra = fromIntegral (randBound ix 2 3) * tsHoleExtraStep spec
+    holeW = holeWidth + holeExtra
+    holeStart = baseX + tsHoleStartOff spec
+    holeEnd = holeStart + holeW
+
+    holes =
+      if hasHole
+        then [Interval holeStart holeEnd]
+        else []
+
+    platY1 = groundTopY + platformLift + platformH / 2
+    platY2 = platY1 + 70
+
+    bridgeChance =
+      clamp01
+        ( cfgBridgeBaseChance cfg
+            - fromIntegral lvl * cfgBridgeDecayPerLevel cfg
+        )
+
+    makeBridge = hasHole && rand01 ix 3 < bridgeChance
+    bridgeX = (holeStart + holeEnd) / 2
+
+    extraChance = cfgExtraPlatformChance cfg
+    makeExtra = rand01 ix 4 < extraChance
+    extraX = baseX + tsExtraPlatXOff spec
+
+    plats =
+      filter (\r -> rectW r > 0)
+        [ if makeBridge
+            then Rect bridgeX platY1 (max platformW (holeW + 40)) platformH
+            else Rect 0 0 0 0
+        , if makeExtra
+            then
+              Rect extraX
+                (if rand01 ix 5 < 0.35 then platY2 else platY1)
+                platformW
+                platformH
+            else Rect 0 0 0 0
+        ]
+
+    spikes =
+      concat
+        [ spikeAt plats holes (baseX + off) (rand01 ix (10 + k) < spikeP)
+        | (k, off) <- zip [0 ..] (tsSpikeOffs spec)
+        ]
+
+    medkits =
+      concat
+        [ medkitAt plats holes (baseX + off) (rand01 ix (40 + k) < medP)
+        | (k, off) <- zip [0 ..] (tsMedkitOffs spec)
+        ]
+
+
+spikeAt :: [Rect] -> [Interval] -> Float -> Bool -> [Rect]
+spikeAt plats holes x ok =
+  if not ok
+    then []
+    else
+      case findPlatformUnder x plats holes of
+        Nothing -> []
+        Just topY ->
+          [Rect x (topY + spikeH / 2) spikeW spikeH]
+
+medkitAt :: [Rect] -> [Interval] -> Float -> Bool -> [Rect]
+medkitAt plats holes x ok =
+  if not ok
+    then []
+    else
+      case findPlatformUnder x plats holes of
+        Nothing -> []
+        Just topY ->
+          [Rect x (topY + medkitLift) medkitW medkitH]
+
+findPlatformUnder :: Float -> [Rect] -> [Interval] -> Maybe Float
+findPlatformUnder x plats holes
+  | any (intervalContains x) holes = Nothing
+  | otherwise =
+      case filter (playerCanStandOn x) plats of
+        [] -> Just groundTopY
+        ps ->
+          Just (maximum (map rectTop ps))
+
+playerCanStandOn :: Float -> Rect -> Bool
+playerCanStandOn x r =
+  x > rectLeft r && x < rectRight r
+
+
+
+randBound :: Int -> Int -> Int -> Int
+randBound ix salt bound =
+  (mix ix salt `mod` bound) + 1
+
+rand01 :: Int -> Int -> Float
+rand01 ix salt =
+  fromIntegral (mix ix salt `mod` 1000) / 1000
+
+mix :: Int -> Int -> Int
+mix a b =
+  abs ((a + 1) * 1103515245 + (b + 12345) * 2654435761)
+
+clamp01 :: Float -> Float
+clamp01 x
+  | x < 0 = 0
+  | x > 1 = 1
+  | otherwise = x
+
+
+
+-- ============================================================
+-- Файл: src\Geometry.hs
+-- ============================================================
+
+module Geometry
+  ( Rect (..)
+  , Interval (..)
+  , rectLeft
+  , rectRight
+  , rectTop
+  , rectBottom
+  , rectIntersects
+  , intervalContains
+  , intervalOverlaps
+  ) where
+
+data Rect = Rect
+  { rectX :: Float
+  , rectY :: Float
+  , rectW :: Float
+  , rectH :: Float
+  }
+  deriving (Eq, Show)
+
+data Interval = Interval
+  { intA :: Float
+  , intB :: Float
+  }
+  deriving (Eq, Show)
+
+rectLeft :: Rect -> Float
+rectLeft r = rectX r - rectW r / 2
+
+rectRight :: Rect -> Float
+rectRight r = rectX r + rectW r / 2
+
+rectTop :: Rect -> Float
+rectTop r = rectY r + rectH r / 2
+
+rectBottom :: Rect -> Float
+rectBottom r = rectY r - rectH r / 2
+
+rectIntersects :: Rect -> Rect -> Bool
+rectIntersects a b =
+  not
+    ( rectRight a < rectLeft b
+        || rectLeft a > rectRight b
+        || rectTop a < rectBottom b
+        || rectBottom a > rectTop b
+    )
+
+intervalContains :: Float -> Interval -> Bool
+intervalContains x i = x >= intA i && x <= intB i
+
+intervalOverlaps :: Float -> Float -> Interval -> Bool
+intervalOverlaps x1 x2 i =
+  intB i > x1 && intA i < x2
+
+
+
+-- ============================================================
+-- Файл: src\Input.hs
+-- ============================================================
+
+module Input
+  ( handleInputEvent
+  ) where
+
+import Graphics.Gloss.Interface.IO.Game
+  ( Event (EventKey)
+  , Key (Char, SpecialKey)
+  , KeyState (Down)
+  , SpecialKey (KeyLeft, KeyRight, KeySpace, KeyUp)
+  )
+import World (InputState (..))
+
+handleInputEvent :: Event -> InputState -> InputState
+handleInputEvent ev st =
+  case ev of
+    EventKey key keyState _ _
+      | isLeftKey key -> st {inputLeft = keyState == Down}
+      | isRightKey key -> st {inputRight = keyState == Down}
+      | isJumpKey key && keyState == Down -> st {inputJump = True}
+      | otherwise -> st
+    _ -> st
+
+isLeftKey :: Key -> Bool
+isLeftKey key =
+  key `elem` [SpecialKey KeyLeft, Char 'a', Char 'A']
+
+isRightKey :: Key -> Bool
+isRightKey key =
+  key `elem` [SpecialKey KeyRight, Char 'd', Char 'D']
+
+isJumpKey :: Key -> Bool
+isJumpKey key =
+  key `elem` [SpecialKey KeySpace, SpecialKey KeyUp, Char 'w', Char 'W']
+
+
+
+-- ============================================================
+-- Файл: src\Main.hs
+-- ============================================================
+
+module Main (main) where
+
+import Game (runGame)
+
+main :: IO ()
+main = runGame
+
+
+-- ============================================================
+-- Файл: src\Render.hs
+-- ============================================================
+
+{-# LANGUAGE OverloadedStrings #-}
+
+module Render (drawAppIO) where
+
+import Assets (Assets (..))
+import Config (GenConfig (..), SpeedRule (..), difficultyLevel, objectChance)
+import Data.List (find, sortOn)
+import Game.Constants hiding (pauseItem3Y)
+import Geometry
+  ( Interval (..)
+  , Rect (..)
+  , intervalContains
+  , intervalOverlaps
+  , rectBottom
+  , rectLeft
+  , rectRight
+  , rectTop
+  )
+import Graphics.Gloss
+import World (App (..), Difficulty (..), Screen (..), isSupported)
+import Database (ScoreRow(..), SaveRow(..))
+
+txt :: Float -> Float -> Float -> Color -> String -> Picture
+txt x y s clr str =
+  translate x y
+    $ scale s s
+    $ color clr
+    $ Text str
+
+drawAppIO :: Assets -> App -> IO Picture
+drawAppIO assets app = pure (drawApp assets app)
+
+drawApp :: Assets -> App -> Picture
+drawApp assets app =
+  case appScreen app of
+    Title -> drawMenu app
+    Controls -> drawControls app
+    Playing -> drawPlaying assets app
+    Paused -> drawPaused assets app
+    Leaderboard -> drawLeaderboard app
+    LoadGame -> drawLoadGame app
+    GameOver -> drawGameOver assets app
+    NameEntry -> drawNameEntry app
+    SaveGame -> drawSaveGame app
+
+drawMenu :: App -> Picture
+drawMenu app =
+  pictures
+    [ txt titleX titleY titleScale titleColor titleText
+    , drawMenuItem app 0 "START" menuItemY0
+    , drawMenuItem app 1 ("LEVEL: " ++ show (appDifficulty app)) menuItemY1
+    , drawMenuItem app 2 "TOP" menuItemY2
+    , drawMenuItem app 3 "Load Game" menuItemY3
+    , drawMenuItem app 4 "Exit" menuItemY4
+    , txt menuHintX menuHintY menuHintScale menuHintColor menuHintText
+    ]
+
+drawMenuItem :: App -> Int -> String -> Float -> Picture
+drawMenuItem app ix label y =
+  translate menuItemX y
+    $ scale menuItemScale menuItemScale
+    $ color (menuItemColorBy app ix)
+    $ Text label
+
+menuItemColorBy :: App -> Int -> Color
+menuItemColorBy app ix =
+  if menuIx app == ix then menuSelectedColor else menuItemColor
+
+
+drawControls :: App -> Picture
+drawControls app =
+  pictures
+    [ txt (-160) 80 0.45 (makeColorI 240 240 240 255) "Controls"
+    , txt (-420) 10 0.20 (makeColorI 230 230 230 255) "A/D or Left/Right: steer"
+    , txt (-420) (-20) 0.20 (makeColorI 230 230 230 255) "Space/W/Up: jump"
+    , txt (-420) (-50) 0.20 (makeColorI 230 230 230 255) "P: pause"
+    , txt (-420) (-80) 0.20 (makeColorI 230 230 230 255) "T: debug overlay"
+    , txt (-420) (-130) 0.20 (makeColorI 200 200 200 255) "Enter: continue  |  Q: menu  |  Esc: exit"
+    , drawExitTopRight app
+    ]
+
+drawPlaying :: Assets -> App -> Picture
+drawPlaying assets app =
+  pictures
+    [ drawWorld assets app
+    , drawHudPlaying app
+    , drawNotice app (-420) (-210)
+    ]
+
+drawPaused :: Assets -> App -> Picture
+drawPaused assets app =
+  pictures
+    [ drawWorld assets app
+    , drawOverlay app
+    , drawPauseMenu app
+    , drawNotice app (-260) (pauseTitleY - 160)
+    , drawExitTopRight app
+    ]
+
+drawGameOver :: Assets -> App -> Picture
+drawGameOver assets app =
+  pictures
+    [ drawWorld assets app
+    , drawOverlay app
+    , drawGameOverText app
+    , drawNotice app (-260) (gameOverTitleY - 105)
+    ]
+
+drawWorld :: Assets -> App -> Picture
+drawWorld assets app =
+  translate (-cameraX) 0
+    $ pictures
+      [ drawGroundWithHoles app cameraX holes
+      , drawGroundMarks app cameraX holes
+      , drawPlatforms app cameraX plats
+      , drawSpikes app cameraX spikes
+      , drawMedkits app cameraX meds
+      , drawPlayer assets app cameraX
+      ]
+  where
+    cameraX = worldScroll app
+    holes = worldHoles app
+    plats = worldPlatforms app
+    spikes = worldSpikes app
+    meds = worldMedkits app
+
+drawHudPlaying :: App -> Picture
+drawHudPlaying app =
+  pictures
+    [ drawDistanceTopLeft app
+    , drawLivesBelowDistance app
+    , if appShowDebug app then drawDebugBelowLives app else Blank
+    ]
+
+drawOverlay :: App -> Picture
+drawOverlay app =
+  translate (-cameraX) 0
+    $ color (makeColorI 0 0 0 120)
+    $ rectangleSolid (fromIntegral (viewW app)) (fromIntegral (viewH app))
+  where
+    cameraX = worldScroll app
+
+drawPauseMenu :: App -> Picture
+drawPauseMenu app =
+  pictures
+    [ drawPausePanel
+    , translate pauseTitleX pauseTitleY
+        $ scale pauseTitleScale pauseTitleScale
+        $ color pauseTitleColor
+        $ Text pauseTitleText
+    , drawPauseItem app 0 "Resume" pauseItem1Y
+    , drawPauseItem app 1 "Save Game" pauseItem2Y
+    , drawPauseItem app 2 "Menu" pauseItem3Y
+    , translate pauseHintX pauseHintY
+        $ scale pauseHintScale pauseHintScale
+        $ color pauseHintColor
+        $ Text pauseHintText
+    ]
+  where
+    drawPausePanel =
+      pictures
+        [ color pausePanelColor
+            $ rectangleSolid pausePanelW pausePanelH
+        , color pausePanelBorderColor
+            $ rectangleWire pausePanelW pausePanelH
+        ]
+
+drawPauseItem :: App -> Int -> String -> Float -> Picture
+drawPauseItem app ix label y =
+  translate pauseItemX y
+    $ scale pauseItemScale pauseItemScale
+    $ color (pauseItemClr app ix)
+    $ Text label
+
+pauseItemClr :: App -> Int -> Color
+pauseItemClr app ix =
+  if pauseIx app == ix then pauseItemSelectedColor else pauseItemColor
+
+pauseTitleX :: Float
+pauseTitleX = -70
+
+pauseTitleY :: Float
+pauseTitleY = 90
+
+pauseItemX :: Float
+pauseItemX = -70
+
+pauseItem1Y :: Float
+pauseItem1Y = 20
+
+pauseItem2Y :: Float
+pauseItem2Y = -20
+
+pauseItem3Y :: Float
+pauseItem3Y = -60
+
+pauseHintX :: Float
+pauseHintX = -260
+
+pauseHintY :: Float
+pauseHintY = -120
+
+drawGameOverText :: App -> Picture
+drawGameOverText app =
+  pictures
+    [ translate gameOverTitleX gameOverTitleY
+        $ scale gameOverTitleScale gameOverTitleScale
+        $ color gameOverTitleColor
+        $ Text gameOverTitleText
+    , translate gameOverHintX gameOverHintY
+        $ scale gameOverHintScale gameOverHintScale
+        $ color gameOverHintColor
+        $ Text gameOverHintText
+    , translate (-260) (gameOverHintY - 60)
+        $ scale 0.20 0.20
+        $ color (makeColorI 200 200 200 255)
+        $ Text ("Distance: " ++ show meters ++ " m")
+    ]
+  where
+    meters = floor (worldScroll app * metersPerPixel) :: Int
+
+drawDistanceTopLeft :: App -> Picture
+drawDistanceTopLeft app =
+  translate (-460) 220
+    $ scale 0.22 0.22
+    $ color distanceColor
+    $ Text ("Distance: " ++ show meters ++ " m")
+  where
+    meters = floor (worldScroll app * metersPerPixel) :: Int
+
+drawLivesBelowDistance :: App -> Picture
+drawLivesBelowDistance app =
+  translate (-460) 190
+    $ scale 0.22 0.22
+    $ color (makeColorI 240 240 240 255)
+    $ Text ("Lives: " ++ show (playerLives app))
+
+drawDebugBelowLives :: App -> Picture
+drawDebugBelowLives app =
+  translate (-460) 130
+    $ scale 0.14 0.14
+    $ color (makeColorI 255 255 0 255)
+    $ Text (unlines (debugLines app))
+
+debugLines :: App -> [String]
+debugLines app =
+  [ "difficulty: " ++ show lvl
+  , "speed: " ++ show1 speed
+  , "platforms: " ++ show (length (worldPlatforms app))
+  , "holes: " ++ show (length (worldHoles app))
+  , "spikes: " ++ show (length (worldSpikes app))
+  , "medkits: " ++ show (length (worldMedkits app))
+  , "inv: " ++ show1 (playerInvTimer app)
+  ]
+  where
+    cfg = appConfig app
+    lvl = difficultyLevel cfg (worldScroll app)
+    speed = speedAtLevel cfg (appDifficulty app) lvl
+
+speedAtLevel :: GenConfig -> Difficulty -> Int -> Float
+speedAtLevel cfg d lvl =
+  max 0 (speedBase rule + speedGrowth rule * fromIntegral lvl)
+  where
+    rule =
+      case d of
+        Easy -> cfgEasySpeed cfg
+        Normal -> cfgNormalSpeed cfg
+        Hard -> cfgHardSpeed cfg
+
+show1 :: Float -> String
+show1 x = pct (fromIntegral (round (x * 10)) / 10)
+
+pct :: Float -> String
+pct x =
+  if x == fromIntegral (round x)
+    then show (round x :: Int)
+    else show x
+
+drawGroundWithHoles :: App -> Float -> [Interval] -> Picture
+drawGroundWithHoles app cameraX holes =
+  pictures
+    [ translate x groundY
+        $ color groundColor
+        $ rectangleSolid w groundHeight
+    | let x = cameraX + w / 2
+    , let w = fromIntegral (viewW app) + 400
+    , null holes
+    ]
+    <> pictures
+      [ pictures
+          [ translate (x1 + w1 / 2) groundY
+              $ color groundColor
+              $ rectangleSolid w1 groundHeight
+          , translate (x2 + w2 / 2) groundY
+              $ color groundColor
+              $ rectangleSolid w2 groundHeight
+          ]
+      | Interval a b <- holes
+      , let x0 = cameraX - 200
+      , let x3 = cameraX + fromIntegral (viewW app) + 200
+      , let x1 = x0
+      , let w1 = max 0 (a - x0)
+      , let x2 = b
+      , let w2 = max 0 (x3 - b)
+      ]
+
+drawGroundMarks :: App -> Float -> [Interval] -> Picture
+drawGroundMarks app cameraX holes =
+  pictures
+    [ translate x (groundY + groundHeight / 2)
+        $ color markColor
+        $ rectangleSolid 3 groundHeight
+    | i <- [0 .. n]
+    , let x = cameraX - 200 + fromIntegral i * markSpacing
+    , not (any (intervalContains x) holes)
+    ]
+  where
+    n = floor ((fromIntegral (viewW app) + 400) / markSpacing) :: Int
+
+drawPlatforms :: App -> Float -> [Rect] -> Picture
+drawPlatforms _ _ plats =
+  pictures
+    [ translate (rectX r) (rectY r)
+        $ color platformColor
+        $ rectangleSolid (rectW r) (rectH r)
+    | r <- plats
+    ]
+
+drawSpikes :: App -> Float -> [Rect] -> Picture
+drawSpikes _ _ spikes =
+  pictures
+    [ translate (rectX r) (rectY r)
+        $ color spikeColor
+        $ rectangleSolid (rectW r) (rectH r)
+    | r <- spikes
+    ]
+
+drawMedkits :: App -> Float -> [Rect] -> Picture
+drawMedkits _ _ meds =
+  pictures
+    [ pictures
+        [ translate (rectX r) (rectY r)
+            $ color medkitColor
+            $ rectangleSolid (rectW r) (rectH r)
+        , translate (rectX r) (rectY r)
+            $ color medkitCrossColor
+            $ pictures
+              [ rectangleSolid 4 (rectH r * 0.7)
+              , rectangleSolid (rectW r * 0.7) 4
+              ]
+        ]
+    | r <- meds
+    ]
+
+drawPlayer :: Assets -> App -> Float -> Picture
+drawPlayer assets app cameraX =
+  translate px py
+    $ scale s s
+    $ playerPic
+  where
+    px = cameraX + playerBaseX + playerOffsetX app
+    py = playerY app + playerHeight / 2
+    s = playerWidth / playerSpritePxW
+    onGround = isSupported (cameraX + playerBaseX + playerOffsetX app) (playerY app) (worldPlatforms app) (worldHoles app)
+    frameIx = floor (worldScroll app / playerRunFrameStep) `mod` length (assetsPlayerRun assets)
+
+    blink =
+      playerInvTimer app > 0
+        && floor (playerInvTimer app * invBlinkHz) `mod` 2 == 0
+
+    playerPic
+      | blink = Blank
+      | onGround = assetsPlayerRun assets !! frameIx
+      | otherwise = assetsPlayerJump assets
+
+drawExitTopRight :: App -> Picture
+drawExitTopRight app =
+  translate (x0 - 120) (y0 - 30)
+    $ scale 0.18 0.18
+    $ color (makeColorI 220 220 220 255)
+    $ Text "Esc: exit"
+  where
+    x0 = fromIntegral (viewW app) / 2
+    y0 = fromIntegral (viewH app) / 2
+
+drawLoadGame :: App -> Picture
+drawLoadGame app =
+  pictures
+    [ translate (-220) 120
+        $ scale 0.45 0.45
+        $ color (makeColorI 240 240 240 255)
+        $ Text "Load Game"
+    , translate (-420) 82
+        $ scale 0.20 0.20
+        $ color (makeColorI 200 200 200 255)
+        $ Text "Up/Down: slot  |  Enter: load  |  Backspace: back"
+    , drawSaveSlots app
+    , drawNotice app (-420) (-180)
+    , drawExitTopRight app
+    ]
+
+drawSaveGame :: App -> Picture
+drawSaveGame app =
+  pictures
+    [ translate (-220) 120
+        $ scale 0.45 0.45
+        $ color (makeColorI 240 240 240 255)
+        $ Text "Save Game"
+    , translate (-420) 82
+        $ scale 0.20 0.20
+        $ color (makeColorI 200 200 200 255)
+        $ Text "Up/Down: slot  |  Enter: save  |  Backspace: back"
+    , drawSaveSlots app
+    , drawNotice app (-420) (-180)
+    , drawExitTopRight app
+    ]
+
+drawSaveSlots :: App -> Picture
+drawSaveSlots app =
+  pictures
+    [ drawSlotLine i
+    | i <- [0 .. saveSlotsCount - 1]
+    ]
+  where
+    drawSlotLine i =
+      translate (-420) (y0 - dy * fromIntegral i)
+        $ scale 0.20 0.20
+        $ color (if appSlotIx app == i then makeColorI 200 255 0 255 else makeColorI 230 230 230 255)
+        $ Text (formatSlot i)
+
+    y0 = 40
+    dy = 35
+
+    formatSlot i =
+      case find (\r -> saveSlot r == i + 1) (appSaves app) of
+        Nothing -> "Slot " ++ show (i + 1) ++ ": (empty)"
+        Just r ->
+          "Slot "
+            ++ show (i + 1)
+            ++ ": "
+            ++ show meters
+            ++ "m  lives "
+            ++ show (saveLives r)
+            ++ "  "
+            ++ saveCreatedAt r
+          where
+            meters = floor (saveWorldScroll r * metersPerPixel) :: Int
+
+drawLeaderboard :: App -> Picture
+drawLeaderboard app =
+  pictures
+    [ translate (-180) 120
+        $ scale 0.45 0.45
+        $ color (makeColorI 200 255 0 255)
+        $ Text "Leaderboard"
+    , translate (-420) 60
+        $ scale 0.20 0.20
+        $ color (makeColorI 200 255 0 255)
+        $ Text "Top 10 (Backspace: menu)"
+    , drawLeaderboardRows app
+    , drawNotice app (-420) (-180)
+    , drawExitTopRight app
+    ]
+
+drawLeaderboardRows :: App -> Picture
+drawLeaderboardRows app =
+  pictures
+    [ translate (-420) (y0 - dy * fromIntegral i - 30)
+        $ scale 0.18 0.18
+        $ color (makeColorI 230 230 230 255)
+        $ Text (formatRow (i + 1) row)
+    | (i, row) <- zip [0 :: Int ..] (appLeaderboard app)
+    ]
+  where
+    y0 = 50
+    dy = 22
+
+    formatRow rank row =
+      show rank
+        ++ ". "
+        ++ scorePlayerName row
+        ++ "  "
+        ++ show (scoreDistance row)
+        ++ "m  "
+        ++ scoreDifficulty row
+        ++ "  "
+        ++ scoreCreatedAt row
+
+drawNotice :: App -> Float -> Float -> Picture
+drawNotice app x y =
+  case appNotice app of
+    Nothing -> Blank
+    Just msg ->
+      translate x y
+        $ scale 0.16 0.16
+        $ color (makeColorI 255 200 200 255)
+        $ Text msg
+
+drawNameEntry :: App -> Picture
+drawNameEntry app =
+  pictures
+    [ txt (-220) 110 0.42 (makeColorI 240 240 240 255) "Enter Name"
+    , txt (-420) 50 0.20 (makeColorI 220 220 220 255)
+        ("Max " ++ show playerNameMaxLen ++ " chars. Allowed: A-Z 0-9 space _ -")
+    , txt (-420) 10 0.28 (makeColorI 255 255 255 255) (appNameInput app ++ "_")
+    , txt (-420) (-60) 0.20 (makeColorI 200 200 200 255)
+        "Type to edit  |  Backspace: delete  |  Enter: start  |  Q: menu"
+    , drawExitTopRight app
+    ]
+
+
+
+-- ============================================================
+-- Файл: src\World.hs
+-- ============================================================
+
+module World
+  ( Screen(..)
+  , Difficulty(..)
+  , InputState(..)
+  , App(..)
+  , initialApp
+  , startPlaying
+  , goTitle
+  , goLeaderboard
+  , stepWorld
+  , menuMove
+  , menuAdjustDifficulty
+  , togglePause
+  , pauseMove
+  , pauseActivate
+  , nameAddChar
+  , nameBackspace
+  , nameConfirm
+  , menuStartIx
+  , menuDifficultyIx
+  , menuLeaderboardIx
+  , menuLoadIx
+  , menuExitIx
+  , menuMaxIx
+  , isSupported
+  , goLoadGame
+  , slotMove
+  , requestSaveSlot
+  , requestLoadSlot
+  , applySaveRow
+  ) where
+
+import Config (GenConfig(..), SpeedRule(..), difficultyLevel)
+import Data.Char (isAlphaNum, isAscii)
+import Database (ScoreRow, SaveRow(..))
+import Game.Constants
+import Data.List (find)
+import Generator (ensureChunks, generateChunk)
+import Geometry
+  ( Interval(..)
+  , Rect(..)
+  , intervalContains
+  , rectIntersects
+  , rectLeft
+  , rectRight
+  , rectTop
+  )
+
+data Screen
+  = Title
+  | Controls
+  | Playing
+  | Paused
+  | GameOver
+  | Leaderboard
+  | LoadGame
+  | SaveGame
+  | NameEntry
+  deriving (Eq, Show)
+
+data Difficulty
+  = Easy
+  | Normal
+  | Hard
+  deriving (Eq, Show, Enum, Bounded)
+
+data InputState = InputState
+  { inputLeft :: Bool
+  , inputRight :: Bool
+  , inputJump :: Bool
+  }
+  deriving (Eq, Show)
+
+resetInput :: InputState
+resetInput =
+  InputState
+    { inputLeft = False
+    , inputRight = False
+    , inputJump = False
+    }
+
+data App = App
+  { appScreen :: Screen
+  , appDifficulty :: Difficulty
+  , menuIx :: Int
+  , pauseIx :: Int
+  , appInput :: InputState
+  , appShowDebug :: Bool
+  , appConfig :: GenConfig
+  , appDbPath :: FilePath
+  , appLeaderboard :: [ScoreRow]
+  , appPendingLbLoad :: Bool
+  , appPendingScoreSave :: Bool
+  , appNotice :: Maybe String
+  , appPlayerName :: String
+  , appNameInput :: String
+  , appSlotIx :: Int
+  , appSaves :: [SaveRow]
+  , appPendingSavesLoad :: Bool
+  , appPendingSaveSlot :: Maybe Int
+  , appPendingLoadSlot :: Maybe Int
+  , worldScroll :: Float
+  , playerOffsetX :: Float
+  , playerY :: Float
+  , playerVY :: Float
+  , playerLives :: Int
+  , playerInvTimer :: Float
+  , worldHoles :: [Interval]
+  , worldPlatforms :: [Rect]
+  , worldSpikes :: [Rect]
+  , worldMedkits :: [Rect]
+  , nextChunkIx :: Int
+  , viewW :: Int
+  , viewH :: Int
+  }
+  deriving (Eq, Show)
+
+menuStartIx :: Int
+menuStartIx = 0
+
+menuDifficultyIx :: Int
+menuDifficultyIx = 1
+
+menuLeaderboardIx :: Int
+menuLeaderboardIx = 2
+
+menuLoadIx :: Int
+menuLoadIx = 3
+
+menuExitIx :: Int
+menuExitIx = 4
+
+menuMaxIx :: Int
+menuMaxIx = 4
+
+initialApp :: GenConfig -> FilePath -> App
+initialApp cfg dbPath =
+  App
+    { appScreen = Title
+    , appDifficulty = Normal
+    , menuIx = menuStartIx
+    , pauseIx = 0
+    , appInput = resetInput
+    , appShowDebug = False
+    , appConfig = cfg
+    , appDbPath = dbPath
+    , appLeaderboard = []
+    , appPendingLbLoad = False
+    , appPendingScoreSave = False
+    , appNotice = Nothing
+    , appPlayerName = defaultPlayerName
+    , appNameInput = defaultPlayerName
+    , appSlotIx = 0
+    , appSaves = []
+    , appPendingSavesLoad = False
+    , appPendingSaveSlot = Nothing
+    , appPendingLoadSlot = Nothing
+    , worldScroll = 0
+    , playerOffsetX = 0
+    , playerY = playerStartY
+    , playerVY = 0
+    , playerLives = maxLives
+    , playerInvTimer = 0
+    , worldHoles = []
+    , worldPlatforms = []
+    , worldSpikes = []
+    , worldMedkits = []
+    , nextChunkIx = 0
+    , viewW = windowWidth
+    , viewH = windowHeight
+    }
+
+resetKeepingViewAndDifficulty :: App -> App
+resetKeepingViewAndDifficulty old =
+  (initialApp (appConfig old) (appDbPath old))
+    { viewW = viewW old
+    , viewH = viewH old
+    , appDifficulty = appDifficulty old
+    , appShowDebug = appShowDebug old
+    , appPlayerName = appPlayerName old
+    , appNameInput = appPlayerName old
+    }
+
+startPlaying :: App -> App
+startPlaying app =
+  case appScreen app of
+    Title -> (resetKeepingViewAndDifficulty app) {appScreen = Controls}
+    Controls ->
+      (resetKeepingViewAndDifficulty app)
+        { appScreen = NameEntry
+        , appNameInput = ""
+        , appNotice = Nothing
+        }
+    NameEntry ->
+      (resetKeepingViewAndDifficulty app)
+        { appScreen = Playing
+        }
+    GameOver ->
+      (resetKeepingViewAndDifficulty app)
+        { appScreen = Playing
+        }
+    _ -> app
+
+goTitle :: App -> App
+goTitle app =
+  (resetKeepingViewAndDifficulty app)
+    { appScreen = Title
+    }
+
+goLeaderboard :: App -> App
+goLeaderboard app =
+  app
+    { appScreen = Leaderboard
+    , appPendingLbLoad = True
+    , appNotice = Nothing
+    }
+
+goLoadGame :: App -> App
+goLoadGame app =
+  app
+    { appScreen = LoadGame
+    , appSlotIx = 0
+    , appPendingSavesLoad = True
+    , appNotice = Nothing
+    }
+
+goSaveGame :: App -> App
+goSaveGame app =
+  app
+    { appScreen = SaveGame
+    , appInput = resetInput
+    , pauseIx = 0
+    , appSlotIx = 0
+    , appPendingSavesLoad = True
+    , appNotice = Nothing
+    }
+
+slotMove :: Int -> App -> App
+slotMove delta app =
+  case appScreen app of
+    LoadGame -> step
+    SaveGame -> step
+    _ -> app
+  where
+    step =
+      app
+        { appSlotIx =
+            clampInt 0 (saveSlotsCount - 1) (appSlotIx app + delta)
+        }
+
+requestSaveSlot :: App -> App
+requestSaveSlot app =
+  case appScreen app of
+    SaveGame ->
+      app
+        { appPendingSaveSlot = Just (appSlotIx app + 1)
+        , appNotice = Nothing
+        }
+    _ -> app
+
+requestLoadSlot :: App -> App
+requestLoadSlot app =
+  case appScreen app of
+    LoadGame ->
+      app
+        { appPendingLoadSlot = Just (appSlotIx app + 1)
+        , appNotice = Nothing
+        }
+    _ -> app
+
+menuMove :: Int -> App -> App
+menuMove delta app
+  | appScreen app == Title = app {menuIx = clampInt 0 menuMaxIx (menuIx app + delta)}
+  | otherwise = app
+
+menuAdjustDifficulty :: Int -> App -> App
+menuAdjustDifficulty delta app
+  | appScreen app == Title && menuIx app == menuDifficultyIx =
+      app {appDifficulty = stepDifficulty delta (appDifficulty app)}
+  | otherwise = app
+
+stepDifficulty :: Int -> Difficulty -> Difficulty
+stepDifficulty delta d =
+  toEnum ix
+  where
+    lo = fromEnum (minBound :: Difficulty)
+    hi = fromEnum (maxBound :: Difficulty)
+    n = hi - lo + 1
+    cur = fromEnum d - lo
+    ix = lo + ((cur + delta) `mod` n)
+
+runSpeedFor :: GenConfig -> Difficulty -> Int -> Float
+runSpeedFor cfg d lvl =
+  max 0 (speedBase rule + speedGrowth rule * fromIntegral lvl)
+  where
+    rule =
+      case d of
+        Easy -> cfgEasySpeed cfg
+        Normal -> cfgNormalSpeed cfg
+        Hard -> cfgHardSpeed cfg
+
+togglePause :: App -> App
+togglePause app =
+  case appScreen app of
+    Playing ->
+      app
+        { appScreen = Paused
+        , appInput = resetInput
+        , pauseIx = 0
+        }
+    Paused ->
+      app
+        { appScreen = Playing
+        , appInput = resetInput
+        }
+    _ -> app
+
+pauseMove :: Int -> App -> App
+pauseMove delta app =
+  case appScreen app of
+    Paused -> app {pauseIx = clampInt 0 2 (pauseIx app + delta)}
+    _ -> app
+
+pauseActivate :: App -> App
+pauseActivate app =
+  case appScreen app of
+    Paused ->
+      case pauseIx app of
+        0 -> app {appScreen = Playing, appInput = resetInput}
+        1 -> goSaveGame app
+        _ -> goTitle app
+    _ -> app
+
+stepWorld :: Float -> App -> App
+stepWorld dt app
+  | appScreen app == Playing = stepPlaying dt app
+  | otherwise = app
+
+stepPlaying :: Float -> App -> App
+stepPlaying dt app0 =
+  if died
+    then toGameOver app0
+    else appFinal
+  where
+    scroll0 = worldScroll app0
+    cfg = appConfig app0
+    lvl = difficultyLevel cfg scroll0
+
+    speed = runSpeedFor cfg (appDifficulty app0) lvl
+    scroll1 = scroll0 + speed * dt
+
+    holes0 = worldHoles app0
+    plats0 = worldPlatforms app0
+    spikes0 = worldSpikes app0
+    meds0 = worldMedkits app0
+    ix0 = nextChunkIx app0
+
+    (ix1, holes1, plats1, spikes1, meds1) =
+      ensureChunks cfg scroll1 ix0 holes0 plats0 spikes0 meds0
+
+    holes2 = pruneHoles (scroll1 - despawnBehind) holes1
+    plats2 = pruneRects (scroll1 - despawnBehind) plats1
+    spikes2 = pruneRects (scroll1 - despawnBehind) spikes1
+    meds2 = pruneRects (scroll1 - despawnBehind) meds1
+
+    inp0 = appInput app0
+    left = inputLeft inp0
+    right = inputRight inp0
+    jumpNow = inputJump inp0
+
+    xOff0 = playerOffsetX app0
+    xOff1 =
+      clampFloat (-steerRange) steerRange
+        ( xOff0
+            + (if right then 1 else 0)
+            - (if left then 1 else 0)
+            * moveSpeed
+            * dt
+        )
+
+    pxWorld = playerBaseX + scroll1 + xOff1
+    vy0 = playerVY app0
+    y0 = playerY app0
+
+    inv0 = playerInvTimer app0
+    inv1 = max 0 (inv0 - dt)
+
+    (vy1, y0a) =
+      if jumpNow && isSupported pxWorld y0 plats2 holes2
+        then (jumpVelocity, y0)
+        else (vy0, y0)
+
+    inp1 =
+      if jumpNow
+        then inp0 {inputJump = False}
+        else inp0
+
+    vy2 = vy1 - gravity * dt
+    y1 = y0a + vy2 * dt
+
+    (y2, vy3) = resolvePlatforms pxWorld y0a y1 vy2 plats2
+
+    (y3, vy4) =
+      if isOverHole pxWorld holes2
+        then (y2, vy3)
+        else
+          if y2 < deathY
+            then (y2, vy3)
+            else applyGroundCollision y2 vy3
+
+    (lives1, inv2) = applySpikeDamage inv1 (playerLives app0) pxWorld y3 spikes2
+
+    medRects = pickupRects meds2
+    pickedMed = any (rectIntersects (playerRect pxWorld y3)) medRects
+
+    lives2 =
+      if pickedMed
+        then min maxLives (lives1 + 1)
+        else lives1
+
+    meds3 =
+      if pickedMed
+        then filter (not . rectIntersects (playerRect pxWorld y3)) meds2
+        else meds2
+
+    died = lives2 <= 0
+
+    appFinal =
+      app0
+        { worldScroll = scroll1
+        , playerOffsetX = xOff1
+        , playerY = y3
+        , playerVY = vy4
+        , appInput = inp1
+        , playerInvTimer = inv2
+        , playerLives = lives2
+        , worldHoles = holes2
+        , worldPlatforms = plats2
+        , worldSpikes = spikes2
+        , worldMedkits = meds3
+        , nextChunkIx = ix1
+        }
+
+toGameOver :: App -> App
+toGameOver app =
+  app
+    { appScreen = GameOver
+    , appInput = resetInput
+    , appPendingScoreSave = True
+    , appNotice = Nothing
+    }
+
+playerRect :: Float -> Float -> Rect
+playerRect px py =
+  Rect
+    { rectX = px
+    , rectY = py
+    , rectW = playerWidth
+    , rectH = playerHeight
+    }
+
+pickupRects :: [Rect] -> [Rect]
+pickupRects = id
+
+applySpikeDamage :: Float -> Int -> Float -> Float -> [Rect] -> (Int, Float)
+applySpikeDamage inv lives px py spikes =
+  if inv > 0
+    then (lives, inv)
+    else
+      if hitSpike (playerRect px py) spikes
+        then (lives - 1, invincibilityDuration)
+        else (lives, 0)
+
+hitSpike :: Rect -> [Rect] -> Bool
+hitSpike pr spikes =
+  any (rectIntersects pr) spikes
+
+isOverHole :: Float -> [Interval] -> Bool
+isOverHole px holes =
+  any (intervalContains px) holes
+
+isSupported :: Float -> Float -> [Rect] -> [Interval] -> Bool
+isSupported px py plats holes =
+  isOnGround px py holes || isOnPlatform px py plats
+
+isOnGround :: Float -> Float -> [Interval] -> Bool
+isOnGround px py holes =
+  py <= groundY + 0.5 && not (isOverHole px holes)
+
+isOnPlatform :: Float -> Float -> [Rect] -> Bool
+isOnPlatform px py plats =
+  any (playerFullyInside px py) plats
+
+applyGroundCollision :: Float -> Float -> (Float, Float)
+applyGroundCollision y vy =
+  if y < groundY
+    then (groundY, 0)
+    else (y, vy)
+
+resolvePlatforms :: Float -> Float -> Float -> Float -> [Rect] -> (Float, Float)
+resolvePlatforms px y0 y1 vy plats =
+  case find (playerFullyInside px y1) plats of
+    Nothing -> (y1, vy)
+    Just p ->
+      let top = rectTop p + platformEdgeInset
+       in if y0 >= top
+            then (top, 0)
+            else (y1, vy)
+
+playerFullyInside :: Float -> Float -> Rect -> Bool
+playerFullyInside px py r =
+  px > rectLeft r + platformEdgeInset
+    && px < rectRight r - platformEdgeInset
+    && py <= rectTop r + 0.5
+    && py >= rectTop r - 15
+
+pruneHoles :: Float -> [Interval] -> [Interval]
+pruneHoles minX holes =
+  filter (\(Interval a b) -> b > minX) holes
+
+pruneRects :: Float -> [Rect] -> [Rect]
+pruneRects minX rs =
+  filter (\r -> rectRight r > minX) rs
+
+clampInt :: Int -> Int -> Int -> Int
+clampInt lo hi x
+  | x < lo = lo
+  | x > hi = hi
+  | otherwise = x
+
+clampFloat :: Float -> Float -> Float -> Float
+clampFloat lo hi x
+  | x < lo = lo
+  | x > hi = hi
+  | otherwise = x
+
+applySaveRow :: SaveRow -> App -> Either String App
+applySaveRow row old = do
+  let new =
+        (resetKeepingViewAndDifficulty old)
+          { appScreen = Playing
+          , appNotice = Nothing
+          , appInput = resetInput
+          , worldScroll = saveWorldScroll row
+          , playerLives = saveLives row
+          , nextChunkIx = 0
+          , worldHoles = []
+          , worldPlatforms = []
+          , worldSpikes = []
+          , worldMedkits = []
+          }
+  let (hs, ps, ss, ms) = generateChunk (appConfig old) 0
+  pure
+    new
+      { worldHoles = hs
+      , worldPlatforms = ps
+      , worldSpikes = ss
+      , worldMedkits = ms
+      }
+
+nameAddChar :: Char -> App -> App
+nameAddChar c app
+  | appScreen app /= NameEntry = app
+  | not (isAllowedNameChar c) = app
+  | length (appNameInput app) >= playerNameMaxLen = app
+  | otherwise =
+      app {appNameInput = appNameInput app ++ [c]}
+
+nameBackspace :: App -> App
+nameBackspace app
+  | appScreen app /= NameEntry = app
+  | null (appNameInput app) = app
+  | otherwise =
+      app {appNameInput = init (appNameInput app)}
+
+nameConfirm :: App -> App
+nameConfirm app
+  | appScreen app /= NameEntry = app
+  | otherwise =
+      app
+        { appPlayerName = finalName
+        , appNameInput = finalName
+        , appScreen = Playing
+        , appInput = resetInput
+        , appNotice = Nothing
+        }
+  where
+    trimmed = trimSpaces (appNameInput app)
+    finalName =
+      if null trimmed then defaultPlayerName else trimmed
+
+isAllowedNameChar :: Char -> Bool
+isAllowedNameChar c =
+  isAscii c
+    && (isAlphaNum c || c == ' ' || c == '_' || c == '-')
+
+trimSpaces :: String -> String
+trimSpaces = dropWhile (== ' ') . dropWhileEndSpace
+
+dropWhileEndSpace :: String -> String
+dropWhileEndSpace s =
+  reverse (dropWhile (== ' ') (reverse s))
+
+
+
+-- ============================================================
+-- Файл: src\Game\Constants.hs
+-- ============================================================
+
+module Game.Constants
+  (
+    windowTitle, windowWidth, windowHeight, windowPos,
+    backgroundColor, fps,
+
+    titleText, titleX, titleY, titleScale, titleColor,
+    menuItemX, menuItemY0, menuItemY1, menuItemY2, menuItemY3, menuItemY4,
+    menuItemScale, menuItemColor, menuSelectedColor,
+    menuHintText, menuHintX, menuHintY, menuHintScale, menuHintColor,
+
+    playerWidth, playerHeight, playerStartY, playerBaseX,
+    steerRange, invBlinkHz, moveSpeed,
+    runSpeedEasy, runSpeedNormal, runSpeedHard,
+    metersPerPixel, gravity, jumpVelocity,
+    playerSpritePxW, playerSpritePxH, playerRunFrameStep,
+
+    groundY, groundHeight, groundTopY, groundColor,
+    markSpacing, markColor, distanceColor,
+    deathY, maxLives, invincibilityDuration,
+
+    chunkWidth, spawnAhead, despawnBehind,
+    holeWidth, spikeW, spikeH, platformW, platformH, platformLift,
+    platformEdgeInset,
+    spikeColor, platformColor,
+    bridgeChanceEasy, bridgeChanceNormal, bridgeChanceHard,
+    bridgeMinSpacing, bridgeMaxSpacing,
+    bridgeMinLen, bridgeMaxLen,
+    extraPlatformChance,
+    medkitW, medkitH, medkitLift, medkitColor, medkitCrossColor,
+
+    gameOverTitleText, gameOverTitleX, gameOverTitleY,
+    gameOverTitleScale, gameOverTitleColor,
+    gameOverHintText, gameOverHintX, gameOverHintY,
+    gameOverHintScale, gameOverHintColor,
+
+    pauseTitleText,
+    pausePanelW, pausePanelH, pausePanelColor, pausePanelBorderColor,
+    pauseTitleScale, pauseTitleColor,
+    pauseItemScale, pauseItemSelectedColor, pauseItemColor,
+    pauseHintText, pauseHintScale, pauseHintColor,
+    pauseItem3Y,
+
+    dbFileName, leaderboardLimit,
+    defaultPlayerName, playerNameMaxLen,
+    scoreSavedText,
+    saveSlotsCount,
+    defaultSaveSeed
+  ) where
+
+import Graphics.Gloss (Color, makeColorI)
+import Config (SpeedRule(..))
+windowTitle :: String
+windowTitle = "Endless Platformer"
+
+windowWidth :: Int
+windowWidth = 960
+
+windowHeight :: Int
+windowHeight = 540
+
+windowPos :: (Int, Int)
+windowPos = (60, 40)
+
+backgroundColor :: Color
+backgroundColor = makeColorI 20 20 28 255
+
+fps :: Int
+fps = 60
+
+titleText :: String
+titleText = "ENDLESS PLATFORMER"
+
+titleX :: Float
+titleX = -300
+
+titleY :: Float
+titleY = 140
+
+titleScale :: Float
+titleScale = 0.42
+
+titleColor :: Color
+titleColor = makeColorI 200 255 0 255
+
+menuItemX :: Float
+menuItemX = -70
+
+menuItemY0, menuItemY1, menuItemY2, menuItemY3, menuItemY4 :: Float
+menuItemY0 = 40
+menuItemY1 = 5
+menuItemY2 = -30
+menuItemY3 = -65
+menuItemY4 = -100
+
+menuItemScale :: Float
+menuItemScale = 0.26
+
+menuItemColor :: Color
+menuItemColor = makeColorI 200 215 230 255
+
+menuSelectedColor :: Color
+menuSelectedColor = makeColorI 200 255 0 255
+
+menuHintText :: String
+menuHintText =
+  "Up/Down: choose  |  Left/Right: LEVEL  |  Enter: select  |  Esc: exit"
+
+menuHintX :: Float
+menuHintX = -440
+
+menuHintY :: Float
+menuHintY = -170
+
+menuHintScale :: Float
+menuHintScale = 0.18
+
+menuHintColor :: Color
+menuHintColor = makeColorI 200 215 230 255
+
+playerWidth, playerHeight :: Float
+playerWidth = 40
+playerHeight = 50
+
+playerStartY :: Float
+playerStartY = 60
+
+playerBaseX :: Float
+playerBaseX = 220
+
+steerRange :: Float
+steerRange = 180
+
+invBlinkHz :: Float
+invBlinkHz = 12
+
+moveSpeed :: Float
+moveSpeed = 240
+
+runSpeedEasy :: SpeedRule
+runSpeedEasy = SpeedRule {speedBase = 180, speedGrowth = 1.2}
+
+runSpeedNormal :: SpeedRule
+runSpeedNormal = SpeedRule {speedBase = 220, speedGrowth = 1.6}
+
+runSpeedHard :: SpeedRule
+runSpeedHard = SpeedRule {speedBase = 260, speedGrowth = 2.1}
+
+metersPerPixel :: Float
+metersPerPixel = 0.1
+
+gravity :: Float
+gravity = 900
+
+jumpVelocity :: Float
+jumpVelocity = 360
+
+playerSpritePxW, playerSpritePxH :: Float
+playerSpritePxW = 320
+playerSpritePxH = 320
+
+playerRunFrameStep :: Float
+playerRunFrameStep = 120
+
+groundY :: Float
+groundY = -170
+
+groundHeight :: Float
+groundHeight = 120
+
+groundTopY :: Float
+groundTopY = groundY + groundHeight / 2
+
+groundColor :: Color
+groundColor = makeColorI 80 160 80 255
+
+markSpacing :: Float
+markSpacing = 60
+
+markColor :: Color
+markColor = makeColorI 200 200 200 255
+
+distanceColor :: Color
+distanceColor = makeColorI 240 240 240 255
+
+deathY :: Float
+deathY = -260
+
+maxLives :: Int
+maxLives = 3
+
+invincibilityDuration :: Float
+invincibilityDuration = 2.0
+
+chunkWidth :: Float
+chunkWidth = 720
+
+spawnAhead :: Float
+spawnAhead = 1600
+
+despawnBehind :: Float
+despawnBehind = 800
+
+holeWidth :: Float
+holeWidth = 140
+
+platformW, platformH, platformLift :: Float
+platformW = 180
+platformH = 18
+platformLift = 50
+
+platformEdgeInset :: Float
+platformEdgeInset = 0
+
+platformColor :: Color
+platformColor = makeColorI 120 120 220 255
+
+spikeW, spikeH :: Float
+spikeW = 40
+spikeH = 35
+
+spikeColor :: Color
+spikeColor = makeColorI 220 80 80 255
+
+medkitW, medkitH, medkitLift :: Float
+medkitW = 26
+medkitH = 26
+medkitLift = 70
+
+medkitColor, medkitCrossColor :: Color
+medkitColor = makeColorI 80 200 120 255
+medkitCrossColor = makeColorI 240 240 240 255
+
+bridgeChanceEasy :: Float
+bridgeChanceEasy = 0.8
+
+bridgeChanceNormal :: Float
+bridgeChanceNormal = 0.65
+
+bridgeChanceHard :: Float
+bridgeChanceHard = 0.55
+
+bridgeMinSpacing :: Float
+bridgeMinSpacing = 220
+
+bridgeMaxSpacing :: Float
+bridgeMaxSpacing = 360
+
+bridgeMinLen :: Float
+bridgeMinLen = 160
+
+bridgeMaxLen :: Float
+bridgeMaxLen = 320
+
+extraPlatformChance :: Float
+extraPlatformChance = 0.22
+
+gameOverTitleText :: String
+gameOverTitleText = "GAME OVER"
+
+gameOverTitleX :: Float
+gameOverTitleX = -150
+
+gameOverTitleY :: Float
+gameOverTitleY = 80
+
+gameOverTitleScale :: Float
+gameOverTitleScale = 0.60
+
+gameOverTitleColor :: Color
+gameOverTitleColor = makeColorI 255 80 80 255
+
+gameOverHintText :: String
+gameOverHintText = "Backspace: menu  |  Enter: restart  |  Esc: exit"
+
+gameOverHintX :: Float
+gameOverHintX = -280
+
+gameOverHintY :: Float
+gameOverHintY = -40
+
+gameOverHintScale :: Float
+gameOverHintScale = 0.22
+
+gameOverHintColor :: Color
+gameOverHintColor = makeColorI 230 230 230 255
+
+pauseTitleText :: String
+pauseTitleText = "PAUSED"
+
+pausePanelW :: Float
+pausePanelW = 520
+
+pausePanelH :: Float
+pausePanelH = 380
+
+pausePanelColor :: Color
+pausePanelColor = makeColorI 0 0 0 150
+
+pausePanelBorderColor :: Color
+pausePanelBorderColor = makeColorI 200 255 0 255
+
+pauseTitleScale :: Float
+pauseTitleScale = 0.6
+
+pauseTitleColor :: Color
+pauseTitleColor = makeColorI 200 255 0 255
+
+pauseItemScale :: Float
+pauseItemScale = 0.35
+
+pauseItemSelectedColor :: Color
+pauseItemSelectedColor = makeColorI 200 255 0 255
+
+pauseItemColor :: Color
+pauseItemColor = makeColorI 240 240 240 255
+
+pauseHintText :: String
+pauseHintText = "Up/Down: choose  |  Enter: select  |  Q: menu  |  Esc: exit"
+
+pauseHintScale :: Float
+pauseHintScale = 0.20
+
+pauseHintColor :: Color
+pauseHintColor = makeColorI 200 200 200 255
+
+pauseItem3Y :: Float
+pauseItem3Y = -60
+
+dbFileName :: FilePath
+dbFileName = "game.db"
+
+leaderboardLimit :: Int
+leaderboardLimit = 10
+
+defaultPlayerName :: String
+defaultPlayerName = "Player"
+
+playerNameMaxLen :: Int
+playerNameMaxLen = 16
+
+scoreSavedText :: String
+scoreSavedText = "Score saved to leaderboard."
+
+saveSlotsCount :: Int
+saveSlotsCount = 3
+
+defaultSaveSeed :: Int
+defaultSaveSeed = 0
+

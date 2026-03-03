@@ -79,42 +79,39 @@ templateFor ix =
     _ -> TemplateC
 
 data TemplateSpec = TemplateSpec
-  { tsHoleStartOff :: Float
+  { tsHoleStartOff  :: Float
   , tsHoleExtraStep :: Float
-  , tsSpikeOffs :: [Float]
-  , tsMedkitOffs :: [Float]
+  , tsSpikeOffs     :: [Float]
+  , tsMedkitOffs    :: [Float]
   , tsExtraPlatXOff :: Float
   }
 
 specA :: TemplateSpec
-specA =
-  TemplateSpec
-    { tsHoleStartOff = 240
-    , tsHoleExtraStep = 40
-    , tsSpikeOffs = [320, 520]
-    , tsMedkitOffs = [430]
-    , tsExtraPlatXOff = 560
-    }
+specA = TemplateSpec
+  { tsHoleStartOff  = 240
+  , tsHoleExtraStep = 40
+  , tsSpikeOffs     = [320, 520]
+  , tsMedkitOffs    = [430]
+  , tsExtraPlatXOff = 560
+  }
 
 specB :: TemplateSpec
-specB =
-  TemplateSpec
-    { tsHoleStartOff = 220
-    , tsHoleExtraStep = 40
-    , tsSpikeOffs = [320, 480, 630]
-    , tsMedkitOffs = [410, 590]
-    , tsExtraPlatXOff = 560
-    }
+specB = TemplateSpec
+  { tsHoleStartOff  = 220
+  , tsHoleExtraStep = 40
+  , tsSpikeOffs     = [320, 480, 630]
+  , tsMedkitOffs    = [410, 590]
+  , tsExtraPlatXOff = 560
+  }
 
 specC :: TemplateSpec
-specC =
-  TemplateSpec
-    { tsHoleStartOff = 260
-    , tsHoleExtraStep = 60
-    , tsSpikeOffs = [260, 420, 580]
-    , tsMedkitOffs = [350, 520]
-    , tsExtraPlatXOff = 500
-    }
+specC = TemplateSpec
+  { tsHoleStartOff  = 260
+  , tsHoleExtraStep = 60
+  , tsSpikeOffs     = [260, 420, 580]
+  , tsMedkitOffs    = [350, 520]
+  , tsExtraPlatXOff = 500
+  }
 
 genFromTemplate
   :: GenConfig
@@ -125,17 +122,17 @@ genFromTemplate cfg ix spec =
   (holes, plats, spikes, medkits)
   where
     baseX = chunkStartX ix
-    lvl = difficultyLevel cfg baseX
+    lvl   = difficultyLevel cfg baseX
 
-    holeP = objectChance (cfgHoleRule cfg) lvl
-    spikeP = objectChance (cfgSpikeRule cfg) lvl
-    medP = objectChance (cfgMedkitRule cfg) lvl
+    holeP   = objectChance (cfgHoleRule cfg) lvl
+    spikeP  = objectChance (cfgSpikeRule cfg) lvl
+    medP    = objectChance (cfgMedkitRule cfg) lvl
 
-    hasHole = rand01 ix 1 < holeP
-    holeExtra = fromIntegral (randBound ix 2 3) * tsHoleExtraStep spec
-    holeW = holeWidth + holeExtra
-    holeStart = baseX + tsHoleStartOff spec
-    holeEnd = holeStart + holeW
+    hasHole    = rand01 ix 1 < holeP
+    holeExtra  = fromIntegral (randBound ix 2 3) * tsHoleExtraStep spec
+    holeW      = holeWidth + holeExtra
+    holeStart  = baseX + tsHoleStartOff spec
+    holeEnd    = holeStart + holeW
 
     holes =
       if hasHole
@@ -148,15 +145,15 @@ genFromTemplate cfg ix spec =
     bridgeChance =
       clamp01
         ( cfgBridgeBaseChance cfg
-            - fromIntegral lvl * cfgBridgeDecayPerLevel cfg
+          - fromIntegral lvl * cfgBridgeDecayPerLevel cfg
         )
 
     makeBridge = hasHole && rand01 ix 3 < bridgeChance
-    bridgeX = (holeStart + holeEnd) / 2
+    bridgeX    = (holeStart + holeEnd) / 2
 
     extraChance = cfgExtraPlatformChance cfg
-    makeExtra = rand01 ix 4 < extraChance
-    extraX = baseX + tsExtraPlatXOff spec
+    makeExtra   = rand01 ix 4 < extraChance
+    extraX      = baseX + tsExtraPlatXOff spec
 
     plats =
       filter (\r -> rectW r > 0)
@@ -193,14 +190,14 @@ spikeAt plats holes x enabled
     spikeY =
       case platformUnder x plats of
         Nothing -> groundTopY + spikeH / 2
-        Just r -> rectTop r + spikeH / 2
+        Just r  -> rectTop r + spikeH / 2
 
 medkitAt :: [Rect] -> [Interval] -> Float -> Bool -> [Rect]
 medkitAt plats holes x enabled
   | not enabled = []
   | otherwise =
       case platformUnder x plats of
-        Just r -> [Rect x (rectTop r + medkitLift) medkitW medkitH]
+        Just r  -> [Rect x (rectTop r + medkitLift) medkitW medkitH]
         Nothing ->
           if any (intervalContains x) holes
             then []
@@ -209,7 +206,7 @@ medkitAt plats holes x enabled
 platformUnder :: Float -> [Rect] -> Maybe Rect
 platformUnder x plats =
   case [r | r <- plats, x >= rectLeft r, x <= rectRight r] of
-    [] -> Nothing
+    []     -> Nothing
     r : rs -> Just (foldl pick r rs)
   where
     pick a b = if rectTop b > rectTop a then b else a
@@ -218,11 +215,9 @@ randBound :: Int -> Int -> Int -> Int
 randBound ix salt bound =
   fromInteger (mix `mod` toInteger bound)
   where
-    x = toInteger ix
-    s = toInteger salt
-    mix =
-      (x * 1103515245 + s * 12345 + 1013904223)
-        `mod` 2147483647
+    x   = toInteger ix
+    s   = toInteger salt
+    mix = (x * 1103515245 + s * 12345 + 1013904223) `mod` 2147483647
 
 rand01 :: Int -> Int -> Float
 rand01 ix salt =

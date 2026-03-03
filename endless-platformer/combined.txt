@@ -467,7 +467,7 @@ import Control.Exception (SomeException, bracket, displayException, try)
 import Database.SQLite.Simple
   ( Connection
   , Only(..)
-  ,Query
+  , Query
   , close
   , execute
   , execute_
@@ -478,31 +478,29 @@ import Database.SQLite.Simple
 import Database.SQLite.Simple.FromRow (FromRow(..), field)
 
 data ScoreRow = ScoreRow
-  { scoreId :: Int
+  { scoreId         :: Int
   , scorePlayerName :: String
-  , scoreDistance :: Int
+  , scoreDistance   :: Int
   , scoreDifficulty :: String
-  , scoreCreatedAt :: String
+  , scoreCreatedAt  :: String
   }
   deriving (Eq, Show)
 
 instance FromRow ScoreRow where
-  fromRow =
-    ScoreRow <$> field <*> field <*> field <*> field <*> field
+  fromRow = ScoreRow <$> field <*> field <*> field <*> field <*> field
 
 data SaveRow = SaveRow
-  { saveSlot :: Int
-  , saveSeed :: Int
+  { saveSlot       :: Int
+  , saveSeed       :: Int
   , saveWorldScroll :: Float
-  , saveLives :: Int
+  , saveLives      :: Int
   , saveDifficulty :: String
-  , saveCreatedAt :: String
+  , saveCreatedAt  :: String
   }
   deriving (Eq, Show)
 
 instance FromRow SaveRow where
-  fromRow =
-    SaveRow <$> field <*> field <*> field <*> field <*> field <*> field
+  fromRow = SaveRow <$> field <*> field <*> field <*> field <*> field <*> field
 
 initDb :: FilePath -> IO (Either String ())
 initDb path =
@@ -560,15 +558,15 @@ expectOne :: String -> [a] -> Either String a
 expectOne msg xs =
   case xs of
     [x] -> Right x
-    [] -> Left msg
-    _ -> Left "DB error: expected one row, got many."
+    []  -> Left msg
+    _   -> Left "DB error: expected one row, got many."
 
 withConn :: FilePath -> (Connection -> IO a) -> IO (Either String a)
 withConn path action = do
   r <- try (bracket (open path) close action)
   pure $
     case r of
-      Left e -> Left (dbErr path e)
+      Left e  -> Left (dbErr path e)
       Right x -> Right x
 
 dbErr :: FilePath -> SomeException -> String
@@ -578,7 +576,7 @@ dbErr path e =
     , displayException e
     ]
 
-createScoresSql :: Database.SQLite.Simple.Query
+createScoresSql :: Query
 createScoresSql =
   "CREATE TABLE IF NOT EXISTS scores (\
   \ id INTEGER PRIMARY KEY AUTOINCREMENT,\
@@ -588,7 +586,7 @@ createScoresSql =
   \ created_at TEXT NOT NULL DEFAULT (datetime('now'))\
   \);"
 
-createSavesSql :: Database.SQLite.Simple.Query
+createSavesSql :: Query
 createSavesSql =
   "CREATE TABLE IF NOT EXISTS saves (\
   \ slot INTEGER PRIMARY KEY,\
@@ -675,11 +673,11 @@ runGame :: IO ()
 runGame = do
   eCfg <- loadConfig "config.json"
   case eCfg of
-    Left err -> die err
+    Left err  -> die err
     Right cfg -> do
       eAssets <- loadAssets
       case eAssets of
-        Left err -> die err
+        Left err   -> die err
         Right assets -> do
           eDb <- initDb dbFileName
           case eDb of
@@ -701,7 +699,7 @@ handleEvent :: Event -> App -> IO App
 handleEvent ev app =
   case ev of
     EventResize (w, h) ->
-      pure app {viewW = w, viewH = h}
+      pure app { viewW = w, viewH = h }
 
     EventKey (SpecialKey KeyEsc) Down _ _ ->
       exitSuccess
@@ -709,9 +707,9 @@ handleEvent ev app =
     EventKey (SpecialKey KeyEnter) Down _ _ ->
       case appScreen app of
         NameEntry -> pure (nameConfirm app)
-        LoadGame -> pure (requestLoadSlot app)
-        SaveGame -> pure (requestSaveSlot app)
-        _ -> handleEnter app
+        LoadGame  -> pure (requestLoadSlot app)
+        SaveGame  -> pure (requestSaveSlot app)
+        _         -> handleEnter app
 
     EventKey (SpecialKey KeyBackspace) Down _ _ ->
       pure (handleBackspace app)
@@ -719,26 +717,23 @@ handleEvent ev app =
     EventKey (Char '\b') Down _ _ ->
       pure (handleBackspace app)
 
-    -- NEW: menu/back by Q
     EventKey (Char 'q') Down _ _ ->
       pure (handleQuitKey app)
 
     EventKey (Char 'Q') Down _ _ ->
       pure (handleQuitKey app)
 
-    -- Space in name entry (kept)
     EventKey (SpecialKey KeySpace) Down _ _
       | appScreen app == NameEntry ->
           pure (nameAddChar ' ' app)
 
-    -- NEW: normal character input in name entry
     EventKey (Char c) Down _ _
       | appScreen app == NameEntry ->
           pure (nameAddChar c app)
 
     EventKey key Down _ _
       | isDebugKey key ->
-          pure app {appShowDebug = not (appShowDebug app)}
+          pure app { appShowDebug = not (appShowDebug app) }
       | isPauseKey key ->
           pure (togglePause app)
       | isMenuUpKey key && appScreen app == Title ->
@@ -764,56 +759,53 @@ handleEvent ev app =
 handleQuitKey :: App -> App
 handleQuitKey app =
   case appScreen app of
-    NameEntry -> goTitle app
-    Controls -> goTitle app
+    NameEntry   -> goTitle app
+    Controls    -> goTitle app
     Leaderboard -> goTitle app
-    LoadGame -> goTitle app
-    GameOver -> goTitle app
-    Playing -> goTitle app
-    Paused -> goTitle app
-    SaveGame -> app {appScreen = Paused, pauseIx = 0}
-    Title -> app
-    
+    LoadGame    -> goTitle app
+    GameOver    -> goTitle app
+    Playing     -> goTitle app
+    Paused      -> goTitle app
+    SaveGame    -> app { appScreen = Paused, pauseIx = 0 }
+    Title       -> app
+
 handleBackspace :: App -> App
 handleBackspace app =
   case appScreen app of
-    NameEntry -> nameBackspace app
-    LoadGame -> goTitle app
-    SaveGame -> app {appScreen = Paused, pauseIx = 0}
-    Playing -> goTitle app          -- выход из игры в меню
-    Paused -> goTitle app           -- выход из паузы в меню
-    GameOver -> goTitle app         -- выход из GameOver в меню
-    Leaderboard -> goTitle app      -- выход из Leaderboard в меню
-    Controls -> goTitle app         -- выход из Controls в меню
-    _ -> app
+    NameEntry   -> nameBackspace app
+    LoadGame    -> goTitle app
+    SaveGame    -> app { appScreen = Paused, pauseIx = 0 }
+    Playing     -> goTitle app
+    Paused      -> goTitle app
+    GameOver    -> goTitle app
+    Leaderboard -> goTitle app
+    Controls    -> goTitle app
+    _           -> app
 
 isSlotScreen :: Screen -> Bool
-isSlotScreen s =
-  s == LoadGame || s == SaveGame
+isSlotScreen s = s == LoadGame || s == SaveGame
 
 handleEnter :: App -> IO App
 handleEnter app =
   case appScreen app of
     Title ->
       case menuIx app of
-        i | i == menuStartIx -> pure (startPlaying app)
-        i | i == menuDifficultyIx -> pure (menuAdjustDifficulty 1 app)
+        i | i == menuStartIx       -> pure (startPlaying app)
+        i | i == menuDifficultyIx  -> pure (menuAdjustDifficulty 1 app)
         i | i == menuLeaderboardIx -> pure (goLeaderboard app)
-        i | i == menuLoadIx -> pure (goLoadGame app)
-        i | i == menuExitIx -> exitSuccess
-        _ -> pure app
+        i | i == menuLoadIx        -> pure (goLoadGame app)
+        i | i == menuExitIx        -> exitSuccess
+        _                          -> pure app
     Paused ->
       pure (pauseActivate app)
     _ ->
       pure (startPlaying app)
 
 isDebugKey :: Key -> Bool
-isDebugKey key =
-  key == Char 't' || key == Char 'T'
+isDebugKey key = key == Char 't' || key == Char 'T'
 
 isPauseKey :: Key -> Bool
-isPauseKey key =
-  key == Char 'p' || key == Char 'P'
+isPauseKey key = key == Char 'p' || key == Char 'P'
 
 isMenuUpKey :: Key -> Bool
 isMenuUpKey key =
@@ -834,8 +826,8 @@ isMenuRightKey key =
 applyInput :: Event -> App -> App
 applyInput ev app =
   case appScreen app of
-    Playing -> app {appInput = handleInputEvent ev (appInput app)}
-    _ -> app
+    Playing -> app { appInput = handleInputEvent ev (appInput app) }
+    _       -> app
 
 stepApp :: Float -> App -> IO App
 stepApp dt app = do
@@ -861,17 +853,17 @@ performPendingDb app0 = do
 
   app4 <-
     case appPendingSaveSlot app3 of
-      Nothing -> pure app3
-      Just slot -> saveGameSlot slot app3
+      Nothing    -> pure app3
+      Just slot  -> saveGameSlot slot app3
 
   case appPendingLoadSlot app4 of
-    Nothing -> pure app4
-    Just slot -> loadGameSlot slot app4
+    Nothing    -> pure app4
+    Just slot  -> loadGameSlot slot app4
 
 saveScore :: App -> IO App
 saveScore app = do
   let meters = floor (worldScroll app * metersPerPixel) :: Int
-  let diff = show (appDifficulty app)
+  let diff   = show (appDifficulty app)
   e <- insertScore (appDbPath app) (appPlayerName app) meters diff
   case e of
     Left err ->
@@ -892,14 +884,14 @@ loadLeaderboard app = do
     Left err ->
       pure app
         { appPendingLbLoad = False
-        , appLeaderboard = []
-        , appNotice = Just err
+        , appLeaderboard   = []
+        , appNotice        = Just err
         }
     Right rows ->
       pure app
         { appPendingLbLoad = False
-        , appLeaderboard = rows
-        , appNotice = Nothing
+        , appLeaderboard   = rows
+        , appNotice        = Nothing
         }
 
 loadSavesList :: App -> IO App
@@ -909,14 +901,14 @@ loadSavesList app = do
     Left err ->
       pure app
         { appPendingSavesLoad = False
-        , appSaves = []
-        , appNotice = Just err
+        , appSaves            = []
+        , appNotice           = Just err
         }
     Right rows ->
       pure app
         { appPendingSavesLoad = False
-        , appSaves = rows
-        , appNotice = Nothing
+        , appSaves            = rows
+        , appNotice           = Nothing
         }
 
 saveGameSlot :: Int -> App -> IO App
@@ -931,16 +923,16 @@ saveGameSlot slot app = do
     Left err ->
       pure app
         { appPendingSaveSlot = Nothing
-        , appNotice = Just err
+        , appNotice          = Just err
         }
     Right () ->
       pure
         app
-          { appPendingSaveSlot = Nothing
-          , appPendingSavesLoad = True
-          , appNotice = Just ("Saved to slot " ++ show slot ++ ".")
-          , appScreen = Paused
-          , pauseIx = 0
+          { appPendingSaveSlot   = Nothing
+          , appPendingSavesLoad  = True
+          , appNotice            = Just ("Saved to slot " ++ show slot ++ ".")
+          , appScreen            = Paused
+          , pauseIx              = 0
           }
 
 loadGameSlot :: Int -> App -> IO App
@@ -950,14 +942,14 @@ loadGameSlot slot app = do
     Left err ->
       pure app
         { appPendingLoadSlot = Nothing
-        , appNotice = Just err
+        , appNotice          = Just err
         }
     Right row ->
       case applySaveRow row app of
         Left err ->
           pure app
             { appPendingLoadSlot = Nothing
-            , appNotice = Just err
+            , appNotice          = Just err
             }
         Right loaded ->
           pure loaded
@@ -1048,42 +1040,39 @@ templateFor ix =
     _ -> TemplateC
 
 data TemplateSpec = TemplateSpec
-  { tsHoleStartOff :: Float
+  { tsHoleStartOff  :: Float
   , tsHoleExtraStep :: Float
-  , tsSpikeOffs :: [Float]
-  , tsMedkitOffs :: [Float]
+  , tsSpikeOffs     :: [Float]
+  , tsMedkitOffs    :: [Float]
   , tsExtraPlatXOff :: Float
   }
 
 specA :: TemplateSpec
-specA =
-  TemplateSpec
-    { tsHoleStartOff = 240
-    , tsHoleExtraStep = 40
-    , tsSpikeOffs = [320, 520]
-    , tsMedkitOffs = [430]
-    , tsExtraPlatXOff = 560
-    }
+specA = TemplateSpec
+  { tsHoleStartOff  = 240
+  , tsHoleExtraStep = 40
+  , tsSpikeOffs     = [320, 520]
+  , tsMedkitOffs    = [430]
+  , tsExtraPlatXOff = 560
+  }
 
 specB :: TemplateSpec
-specB =
-  TemplateSpec
-    { tsHoleStartOff = 220
-    , tsHoleExtraStep = 40
-    , tsSpikeOffs = [320, 480, 630]
-    , tsMedkitOffs = [410, 590]
-    , tsExtraPlatXOff = 560
-    }
+specB = TemplateSpec
+  { tsHoleStartOff  = 220
+  , tsHoleExtraStep = 40
+  , tsSpikeOffs     = [320, 480, 630]
+  , tsMedkitOffs    = [410, 590]
+  , tsExtraPlatXOff = 560
+  }
 
 specC :: TemplateSpec
-specC =
-  TemplateSpec
-    { tsHoleStartOff = 260
-    , tsHoleExtraStep = 60
-    , tsSpikeOffs = [260, 420, 580]
-    , tsMedkitOffs = [350, 520]
-    , tsExtraPlatXOff = 500
-    }
+specC = TemplateSpec
+  { tsHoleStartOff  = 260
+  , tsHoleExtraStep = 60
+  , tsSpikeOffs     = [260, 420, 580]
+  , tsMedkitOffs    = [350, 520]
+  , tsExtraPlatXOff = 500
+  }
 
 genFromTemplate
   :: GenConfig
@@ -1094,17 +1083,17 @@ genFromTemplate cfg ix spec =
   (holes, plats, spikes, medkits)
   where
     baseX = chunkStartX ix
-    lvl = difficultyLevel cfg baseX
+    lvl   = difficultyLevel cfg baseX
 
-    holeP = objectChance (cfgHoleRule cfg) lvl
-    spikeP = objectChance (cfgSpikeRule cfg) lvl
-    medP = objectChance (cfgMedkitRule cfg) lvl
+    holeP   = objectChance (cfgHoleRule cfg) lvl
+    spikeP  = objectChance (cfgSpikeRule cfg) lvl
+    medP    = objectChance (cfgMedkitRule cfg) lvl
 
-    hasHole = rand01 ix 1 < holeP
-    holeExtra = fromIntegral (randBound ix 2 3) * tsHoleExtraStep spec
-    holeW = holeWidth + holeExtra
-    holeStart = baseX + tsHoleStartOff spec
-    holeEnd = holeStart + holeW
+    hasHole    = rand01 ix 1 < holeP
+    holeExtra  = fromIntegral (randBound ix 2 3) * tsHoleExtraStep spec
+    holeW      = holeWidth + holeExtra
+    holeStart  = baseX + tsHoleStartOff spec
+    holeEnd    = holeStart + holeW
 
     holes =
       if hasHole
@@ -1117,15 +1106,15 @@ genFromTemplate cfg ix spec =
     bridgeChance =
       clamp01
         ( cfgBridgeBaseChance cfg
-            - fromIntegral lvl * cfgBridgeDecayPerLevel cfg
+          - fromIntegral lvl * cfgBridgeDecayPerLevel cfg
         )
 
     makeBridge = hasHole && rand01 ix 3 < bridgeChance
-    bridgeX = (holeStart + holeEnd) / 2
+    bridgeX    = (holeStart + holeEnd) / 2
 
     extraChance = cfgExtraPlatformChance cfg
-    makeExtra = rand01 ix 4 < extraChance
-    extraX = baseX + tsExtraPlatXOff spec
+    makeExtra   = rand01 ix 4 < extraChance
+    extraX      = baseX + tsExtraPlatXOff spec
 
     plats =
       filter (\r -> rectW r > 0)
@@ -1162,14 +1151,14 @@ spikeAt plats holes x enabled
     spikeY =
       case platformUnder x plats of
         Nothing -> groundTopY + spikeH / 2
-        Just r -> rectTop r + spikeH / 2
+        Just r  -> rectTop r + spikeH / 2
 
 medkitAt :: [Rect] -> [Interval] -> Float -> Bool -> [Rect]
 medkitAt plats holes x enabled
   | not enabled = []
   | otherwise =
       case platformUnder x plats of
-        Just r -> [Rect x (rectTop r + medkitLift) medkitW medkitH]
+        Just r  -> [Rect x (rectTop r + medkitLift) medkitW medkitH]
         Nothing ->
           if any (intervalContains x) holes
             then []
@@ -1178,7 +1167,7 @@ medkitAt plats holes x enabled
 platformUnder :: Float -> [Rect] -> Maybe Rect
 platformUnder x plats =
   case [r | r <- plats, x >= rectLeft r, x <= rectRight r] of
-    [] -> Nothing
+    []     -> Nothing
     r : rs -> Just (foldl pick r rs)
   where
     pick a b = if rectTop b > rectTop a then b else a
@@ -1187,11 +1176,9 @@ randBound :: Int -> Int -> Int -> Int
 randBound ix salt bound =
   fromInteger (mix `mod` toInteger bound)
   where
-    x = toInteger ix
-    s = toInteger salt
-    mix =
-      (x * 1103515245 + s * 12345 + 1013904223)
-        `mod` 2147483647
+    x   = toInteger ix
+    s   = toInteger salt
+    mix = (x * 1103515245 + s * 12345 + 1013904223) `mod` 2147483647
 
 rand01 :: Int -> Int -> Float
 rand01 ix salt =
@@ -1321,17 +1308,15 @@ main = runGame
 -- Файл: src\Render.hs
 -- ============================================================
 
-{-# LANGUAGE OverloadedStrings #-}
-
 module Render (drawAppIO) where
 
-import Assets (Assets (..))
-import Config (GenConfig (..), SpeedRule (..), difficultyLevel, objectChance)
+import Assets (Assets(..))
+import Config (GenConfig(..), SpeedRule(..), difficultyLevel, objectChance)
 import Data.List (find, sortOn)
 import Game.Constants
 import Geometry
-  ( Interval (..)
-  , Rect (..)
+  ( Interval(..)
+  , Rect(..)
   , intervalContains
   , intervalOverlaps
   , rectBottom
@@ -1340,24 +1325,30 @@ import Geometry
   , rectTop
   )
 import Graphics.Gloss
-import World (App (..), Difficulty (..), Screen (..), isSupported)
+import World
+  ( App(..)
+  , Difficulty(..)
+  , Screen(..)
+  , isSupported
+  )
 import Database (ScoreRow(..), SaveRow(..))
 import Text.Printf (printf)
+
 drawAppIO :: Assets -> App -> IO Picture
 drawAppIO assets app = pure (drawApp assets app)
 
 drawApp :: Assets -> App -> Picture
 drawApp assets app =
   case appScreen app of
-    Title -> drawMenu app
-    Controls -> drawControls app
-    Playing -> drawPlaying assets app
-    Paused -> drawPaused assets app
+    Title       -> drawMenu app
+    Controls    -> drawControls app
+    Playing     -> drawPlaying assets app
+    Paused      -> drawPaused assets app
     Leaderboard -> drawLeaderboard app
-    LoadGame -> drawLoadGame app
-    GameOver -> drawGameOver assets app
-    NameEntry -> drawNameEntry app
-    SaveGame -> drawSaveGame app
+    LoadGame    -> drawLoadGame app
+    GameOver    -> drawGameOver assets app
+    NameEntry   -> drawNameEntry app
+    SaveGame    -> drawSaveGame app
 
 drawMenu :: App -> Picture
 drawMenu app =
@@ -1387,7 +1378,6 @@ drawMenuItem app ix label y =
 menuItemColorBy :: App -> Int -> Color
 menuItemColorBy app ix =
   if menuIx app == ix then menuSelectedColor else menuItemColor
-
 
 drawControls :: App -> Picture
 drawControls app =
@@ -1457,10 +1447,10 @@ drawWorld assets app =
       ]
   where
     cameraX = worldScroll app - playerBaseX
-    holes = worldHoles app
-    plats = worldPlatforms app
-    spikes = worldSpikes app
-    meds = worldMedkits app
+    holes   = worldHoles app
+    plats   = worldPlatforms app
+    spikes  = worldSpikes app
+    meds    = worldMedkits app
 
 drawHudPlaying :: App -> Picture
 drawHudPlaying app =
@@ -1508,26 +1498,14 @@ pauseItemClr :: App -> Int -> Color
 pauseItemClr app ix =
   if pauseIx app == ix then pauseItemSelectedColor else pauseItemColor
 
-pauseTitleX :: Float
+pauseTitleX, pauseTitleY, pauseItemX, pauseItem1Y, pauseItem2Y, pauseHintX, pauseHintY :: Float
 pauseTitleX = -90
-
-pauseTitleY :: Float
 pauseTitleY = 55
-
-pauseItemX :: Float
-pauseItemX = -150
-
-pauseItem1Y :: Float
+pauseItemX  = -150
 pauseItem1Y = 10
-
-pauseItem2Y :: Float
 pauseItem2Y = -28
-
-pauseHintX :: Float
-pauseHintX = -250
-
-pauseHintY :: Float
-pauseHintY = -130
+pauseHintX  = -250
+pauseHintY  = -130
 
 drawGameOverText :: App -> Picture
 drawGameOverText app =
@@ -1572,9 +1550,7 @@ drawLivesBelowDistance app =
     dx i = fromIntegral (i - 1) * heartSpacing
 
     heartColor i =
-      if i <= playerLives app
-        then heartFullColor
-        else heartEmptyColor
+      if i <= playerLives app then heartFullColor else heartEmptyColor
 
 drawDebugBelowLives :: App -> Picture
 drawDebugBelowLives app
@@ -1588,10 +1564,10 @@ drawDebugBelowLives app
         | (i, dbgLine) <- zip [0 :: Int ..] (debugLines app)
         ]
   where
-    x = screenLeft app + 10
-    y0 = screenTop app - 95
-    dy = 18
-    s = 0.16
+    x        = screenLeft app + 10
+    y0       = screenTop app - 95
+    dy       = 18
+    s        = 0.16
     dbgColor = makeColorI 210 230 255 255
 
 debugLines :: App -> [String]
@@ -1605,43 +1581,39 @@ debugLines app =
   , "objs H/P/S/M " ++ show nH ++ "/" ++ show nP ++ "/" ++ show nS ++ "/" ++ show nM
   ]
   where
-    cfg = appConfig app
+    cfg   = appConfig app
     scroll = worldScroll app
-    px = scroll + playerOffsetX app
+    px    = scroll + playerOffsetX app
 
-    lvl = difficultyLevel cfg scroll
+    lvl   = difficultyLevel cfg scroll
     speed = speedAtLevel app lvl
 
-    holeP = objectChance (cfgHoleRule cfg) lvl
+    holeP  = objectChance (cfgHoleRule cfg) lvl
     spikeP = objectChance (cfgSpikeRule cfg) lvl
-    medP = objectChance (cfgMedkitRule cfg) lvl
+    medP   = objectChance (cfgMedkitRule cfg) lvl
 
     nH = length (worldHoles app)
     nP = length (worldPlatforms app)
     nS = length (worldSpikes app)
     nM = length (worldMedkits app)
 
-    supported =
-      isSupported px (playerY app) (playerVY app) (worldHoles app) (worldPlatforms app)
+    supported = isSupported px (playerY app) (playerVY app) (worldHoles app) (worldPlatforms app)
 
 speedAtLevel :: App -> Int -> Float
 speedAtLevel app lvl =
   speedBase rule + speedGrowth rule * fromIntegral lvl
   where
     cfg = appConfig app
-    rule =
-      case appDifficulty app of
-        Easy -> cfgEasySpeed cfg
-        Normal -> cfgNormalSpeed cfg
-        Hard -> cfgHardSpeed cfg
+    rule = case appDifficulty app of
+      Easy   -> cfgEasySpeed cfg
+      Normal -> cfgNormalSpeed cfg
+      Hard   -> cfgHardSpeed cfg
 
 show1 :: Float -> String
-show1 x =
-  show ((fromIntegral (round (x * 10) :: Int) / 10) :: Float)
+show1 x = show ((fromIntegral (round (x * 10) :: Int) / 10) :: Float)
 
 pct :: Float -> String
-pct p =
-  show (round (p * 100) :: Int) ++ "%"
+pct p = show (round (p * 100) :: Int) ++ "%"
 
 drawExitTopRight :: App -> Picture
 drawExitTopRight app =
@@ -1655,9 +1627,7 @@ drawGroundWithHoles app cameraX holes =
   pictures (map drawSeg segs)
   where
     (leftX, rightX) = visibleRange app cameraX
-    hs =
-      sortOn intA
-        $ filter (intervalOverlaps leftX rightX) holes
+    hs = sortOn intA $ filter (intervalOverlaps leftX rightX) holes
     segs = buildSegments leftX rightX hs
 
 drawSeg :: (Float, Float) -> Picture
@@ -1666,7 +1636,7 @@ drawSeg (x1, x2) =
     $ color groundColor
     $ rectangleSolid w groundHeight
   where
-    w = x2 - x1
+    w  = x2 - x1
     cx = (x1 + x2) / 2
 
 buildSegments :: Float -> Float -> [Interval] -> [(Float, Float)]
@@ -1681,8 +1651,8 @@ buildSegments leftX rightX holes =
       | intB h <= cursor =
           go cursor hs
       | otherwise =
-          let segEnd = min (intA h) rightX
-              cursor' = max cursor (intB h)
+          let segEnd   = min (intA h) rightX
+              cursor'  = max cursor (intB h)
               segsHere = if cursor < segEnd then [(cursor, segEnd)] else []
            in segsHere ++ go cursor' hs
 
@@ -1708,8 +1678,7 @@ drawMark x =
     markH = 8
 
 drawPlatforms :: [Rect] -> Picture
-drawPlatforms plats =
-  pictures (map drawPlat plats)
+drawPlatforms plats = pictures (map drawPlat plats)
   where
     drawPlat r =
       translate (rectX r) (rectY r)
@@ -1717,8 +1686,7 @@ drawPlatforms plats =
         $ rectangleSolid (rectW r) (rectH r)
 
 drawSpikes :: [Rect] -> Picture
-drawSpikes spikes =
-  pictures (map drawSpike spikes)
+drawSpikes spikes = pictures (map drawSpike spikes)
 
 drawSpike :: Rect -> Picture
 drawSpike r =
@@ -1730,8 +1698,7 @@ drawSpike r =
       ]
 
 drawMedkits :: [Rect] -> Picture
-drawMedkits meds =
-  pictures (map drawMedkit meds)
+drawMedkits meds = pictures (map drawMedkit meds)
 
 drawMedkit :: Rect -> Picture
 drawMedkit r =
@@ -1752,7 +1719,7 @@ drawPlayer assets app =
     $ color (makeColorI 255 255 255 alpha) playerPic
   where
     px = worldScroll app + playerOffsetX app
-    s = spriteScale
+    s  = spriteScale
 
     playerPic =
       if playerIsInAir app
@@ -1765,24 +1732,22 @@ drawPlayer assets app =
         else 255
 
 spriteScale :: Float
-spriteScale =
-  min (playerWidth / playerSpritePxW) (playerHeight / playerSpritePxH)
+spriteScale = min (playerWidth / playerSpritePxW) (playerHeight / playerSpritePxH)
 
 pickRunFrame :: Assets -> App -> Picture
 pickRunFrame assets app =
   assetsPlayerRun assets !! ix
   where
-    n = length (assetsPlayerRun assets)
+    n  = length (assetsPlayerRun assets)
     ix = (floor (worldScroll app / playerRunFrameStep) :: Int) `mod` n
 
 blinkOff :: Float -> Bool
-blinkOff inv =
-  odd (floor (inv * invBlinkHz) :: Int)
+blinkOff inv = odd (floor (inv * invBlinkHz) :: Int)
 
 playerIsInAir :: App -> Bool
 playerIsInAir app = not (isSupported px (playerY app) (playerVY app) holes plats)
   where
-    px = worldScroll app + playerOffsetX app
+    px    = worldScroll app + playerOffsetX app
     holes = worldHoles app
     plats = worldPlatforms app
 
@@ -1790,17 +1755,13 @@ visibleRange :: App -> Float -> (Float, Float)
 visibleRange app cameraX =
   (cameraX - halfW - margin, cameraX + halfW + margin)
   where
-    halfW = fromIntegral (viewW app) / 2
+    halfW  = fromIntegral (viewW app) / 2
     margin = 200
 
-screenLeft :: App -> Float
-screenLeft app = -fromIntegral (viewW app) / 2
-
-screenRight :: App -> Float
-screenRight app = fromIntegral (viewW app) / 2
-
-screenTop :: App -> Float
-screenTop app = fromIntegral (viewH app) / 2
+screenLeft, screenRight, screenTop :: App -> Float
+screenLeft  app = -fromIntegral (viewW app) / 2
+screenRight app =  fromIntegral (viewW app) / 2
+screenTop   app =  fromIntegral (viewH app) / 2
 
 drawLoadGame :: App -> Picture
 drawLoadGame app =
@@ -1852,15 +1813,14 @@ slotColor app ix =
   if appSlotIx app == ix then menuSelectedColor else menuItemColor
 
 lookupSave :: Int -> [SaveRow] -> Maybe SaveRow
-lookupSave slot rows =
-  find (\r -> saveSlot r == slot) rows
+lookupSave slot rows = find (\r -> saveSlot r == slot) rows
 
 formatSlot :: Int -> Maybe SaveRow -> String
 formatSlot slot mRow =
   case mRow of
     Nothing ->
       "Slot " ++ show slot ++ ": empty"
-    Just r ->
+    Just r  ->
       "Slot " ++ show slot ++ ": "
         ++ show meters ++ " m  "
         ++ "Lives " ++ show (saveLives r) ++ "  "
@@ -1878,7 +1838,7 @@ drawLeaderboard app =
         $ Text "Leaderboard"
     , translate (-420) 60
         $ scale 0.20 0.20
-        $ color (makeColorI 200 255 0 255 )
+        $ color (makeColorI 200 255 0 255)
         $ Text "Top 10 (Backspace: menu)"
     , drawLeaderboardRows app
     , drawNotice app (-420) (-180)
@@ -1888,7 +1848,7 @@ drawLeaderboard app =
 drawLeaderboardRows :: App -> Picture
 drawLeaderboardRows app =
   pictures
-    [ translate (-420) (y0 - dy * fromIntegral i -30)
+    [ translate (-420) (y0 - dy * fromIntegral i - 30)
         $ scale 0.18 0.18
         $ color (makeColorI 230 230 230 255)
         $ Text (formatRow (i + 1) row)
@@ -1900,17 +1860,17 @@ drawLeaderboardRows app =
 
 formatRow :: Int -> ScoreRow -> String
 formatRow pos r =
-    printf "[%-2d] %6s m  %-10s  %-20s"
-           pos
-           (show (scoreDistance r))
-           (scoreDifficulty r)
-           (scorePlayerName r)
+  printf "[%-2d] %6s m  %-10s  %-20s"
+         pos
+         (show (scoreDistance r))
+         (scoreDifficulty r)
+         (scorePlayerName r)
 
 drawNotice :: App -> Float -> Float -> Picture
 drawNotice app x y =
   case appNotice app of
-    Nothing -> Blank
-    Just msg ->
+    Nothing   -> Blank
+    Just msg  ->
       translate x y
         $ scale 0.16 0.16
         $ color (makeColorI 255 200 200 255)
@@ -1969,10 +1929,10 @@ module World
   , menuMaxIx
   , isSupported
   , goLoadGame
-, slotMove
-, requestSaveSlot
-, requestLoadSlot
-, applySaveRow
+  , slotMove
+  , requestSaveSlot
+  , requestLoadSlot
+  , applySaveRow
   ) where
 
 import Config (GenConfig(..), SpeedRule(..), difficultyLevel)
@@ -1996,9 +1956,9 @@ import Game.Constants
   , steerRange
   , windowHeight
   , windowWidth
-  , chunkWidth, 
-  spawnAhead, 
-  saveSlotsCount
+  , chunkWidth
+  , spawnAhead
+  , saveSlotsCount
   )
 import Generator (ensureChunks, generateChunk)
 import Geometry
@@ -2030,173 +1990,148 @@ data Difficulty
   deriving (Eq, Show, Enum, Bounded)
 
 data InputState = InputState
-  { inputLeft :: Bool
+  { inputLeft  :: Bool
   , inputRight :: Bool
-  , inputJump :: Bool
-  }
-  deriving (Eq, Show)
+  , inputJump  :: Bool
+  } deriving (Eq, Show)
 
 resetInput :: InputState
-resetInput =
-  InputState
-    { inputLeft = False
-    , inputRight = False
-    , inputJump = False
-    }
+resetInput = InputState False False False
 
 data App = App
-  { appScreen :: Screen
-  , appDifficulty :: Difficulty
-  , menuIx :: Int
-  , pauseIx :: Int
-  , appInput :: InputState
-  , appShowDebug :: Bool
-  , appConfig :: GenConfig
-  , appDbPath :: FilePath
-  , appLeaderboard :: [ScoreRow]
-  , appPendingLbLoad :: Bool
-  , appPendingScoreSave :: Bool
-  , appNotice :: Maybe String
-  , appPlayerName :: String
-  , appNameInput :: String
-  , appSlotIx :: Int
-  , appSaves :: [SaveRow]
-  , appPendingSavesLoad :: Bool
-  , appPendingSaveSlot :: Maybe Int
-  , appPendingLoadSlot :: Maybe Int
-  , worldScroll :: Float
-  , playerOffsetX :: Float
-  , playerY :: Float
-  , playerVY :: Float
-  , playerLives :: Int
-  , playerInvTimer :: Float
-  , worldHoles :: [Interval]
-  , worldPlatforms :: [Rect]
-  , worldSpikes :: [Rect]
-  , worldMedkits :: [Rect]
-  , nextChunkIx :: Int
-  , viewW :: Int
-  , viewH :: Int
-  }
-  deriving (Eq, Show)
+  { appScreen            :: Screen
+  , appDifficulty        :: Difficulty
+  , menuIx               :: Int
+  , pauseIx              :: Int
+  , appInput             :: InputState
+  , appShowDebug         :: Bool
+  , appConfig            :: GenConfig
+  , appDbPath            :: FilePath
+  , appLeaderboard       :: [ScoreRow]
+  , appPendingLbLoad     :: Bool
+  , appPendingScoreSave  :: Bool
+  , appNotice            :: Maybe String
+  , appPlayerName        :: String
+  , appNameInput         :: String
+  , appSlotIx            :: Int
+  , appSaves             :: [SaveRow]
+  , appPendingSavesLoad  :: Bool
+  , appPendingSaveSlot   :: Maybe Int
+  , appPendingLoadSlot   :: Maybe Int
+  , worldScroll          :: Float
+  , playerOffsetX        :: Float
+  , playerY              :: Float
+  , playerVY             :: Float
+  , playerLives          :: Int
+  , playerInvTimer       :: Float
+  , worldHoles           :: [Interval]
+  , worldPlatforms       :: [Rect]
+  , worldSpikes          :: [Rect]
+  , worldMedkits         :: [Rect]
+  , nextChunkIx          :: Int
+  , viewW                :: Int
+  , viewH                :: Int
+  } deriving (Eq, Show)
 
-menuStartIx :: Int
-menuStartIx = 0
-
-menuDifficultyIx :: Int
-menuDifficultyIx = 1
-
-menuLeaderboardIx :: Int
+menuStartIx, menuDifficultyIx, menuLeaderboardIx, menuLoadIx, menuExitIx, menuMaxIx :: Int
+menuStartIx       = 0
+menuDifficultyIx  = 1
 menuLeaderboardIx = 2
-
-menuLoadIx :: Int
-menuLoadIx = 3
-
-menuExitIx :: Int
-menuExitIx = 4
-
-menuMaxIx :: Int
-menuMaxIx = 4
+menuLoadIx        = 3
+menuExitIx        = 4
+menuMaxIx         = 4
 
 initialApp :: GenConfig -> FilePath -> App
 initialApp cfg dbPath =
   App
-    { appScreen = Title
-    , appDifficulty = Normal
-    , menuIx = menuStartIx
-    , pauseIx = 0
-    , appInput = resetInput
-    , appShowDebug = False
-    , appConfig = cfg
-    , appDbPath = dbPath
-    , appLeaderboard = []
-    , appPendingLbLoad = False
-    , appPendingScoreSave = False
-    , appNotice = Nothing
-    , appPlayerName = defaultPlayerName
-    , appNameInput = defaultPlayerName
-    , appSlotIx = 0
-    , appSaves = []
-    , appPendingSavesLoad = False
-    , appPendingSaveSlot = Nothing
-    , appPendingLoadSlot = Nothing
-    , worldScroll = 0
-    , playerOffsetX = 0
-    , playerY = playerStartY
-    , playerVY = 0
-    , playerLives = maxLives
-    , playerInvTimer = 0
-    , worldHoles = []
-    , worldPlatforms = []
-    , worldSpikes = []
-    , worldMedkits = []
-    , nextChunkIx = 0
-    , viewW = windowWidth
-    , viewH = windowHeight
+    { appScreen            = Title
+    , appDifficulty        = Normal
+    , menuIx               = menuStartIx
+    , pauseIx              = 0
+    , appInput             = resetInput
+    , appShowDebug         = False
+    , appConfig            = cfg
+    , appDbPath            = dbPath
+    , appLeaderboard       = []
+    , appPendingLbLoad     = False
+    , appPendingScoreSave  = False
+    , appNotice            = Nothing
+    , appPlayerName        = defaultPlayerName
+    , appNameInput         = defaultPlayerName
+    , appSlotIx            = 0
+    , appSaves             = []
+    , appPendingSavesLoad  = False
+    , appPendingSaveSlot   = Nothing
+    , appPendingLoadSlot   = Nothing
+    , worldScroll          = 0
+    , playerOffsetX        = 0
+    , playerY              = playerStartY
+    , playerVY             = 0
+    , playerLives          = maxLives
+    , playerInvTimer       = 0
+    , worldHoles           = []
+    , worldPlatforms       = []
+    , worldSpikes          = []
+    , worldMedkits         = []
+    , nextChunkIx          = 0
+    , viewW                = windowWidth
+    , viewH                = windowHeight
     }
 
 resetKeepingViewAndDifficulty :: App -> App
 resetKeepingViewAndDifficulty old =
   (initialApp (appConfig old) (appDbPath old))
-    { viewW = viewW old
-    , viewH = viewH old
-    , appDifficulty = appDifficulty old
-    , appShowDebug = appShowDebug old
-    , appPlayerName = appPlayerName old
-    , appNameInput = appPlayerName old
+    { viewW            = viewW old
+    , viewH            = viewH old
+    , appDifficulty    = appDifficulty old
+    , appShowDebug     = appShowDebug old
+    , appPlayerName    = appPlayerName old
+    , appNameInput     = appPlayerName old
     }
 
 startPlaying :: App -> App
 startPlaying app =
   case appScreen app of
-    Title -> (resetKeepingViewAndDifficulty app) {appScreen = Controls}
-    Controls ->
-      (resetKeepingViewAndDifficulty app)
-        { appScreen = NameEntry
-        , appNameInput =  ""
-        , appNotice = Nothing
-        }
-    NameEntry ->
-      (resetKeepingViewAndDifficulty app)
-        { appScreen = Playing
-        }
-    GameOver ->
-      (resetKeepingViewAndDifficulty app)
-        { appScreen = Playing
-        }
-    _ -> app
+    Title      -> (resetKeepingViewAndDifficulty app) {appScreen = Controls}
+    Controls   -> (resetKeepingViewAndDifficulty app)
+                    { appScreen = NameEntry
+                    , appNameInput = ""
+                    , appNotice = Nothing
+                    }
+    NameEntry  -> (resetKeepingViewAndDifficulty app) {appScreen = Playing}
+    GameOver   -> (resetKeepingViewAndDifficulty app) {appScreen = Playing}
+    _          -> app
 
 goTitle :: App -> App
 goTitle app =
-  (resetKeepingViewAndDifficulty app)
-    { appScreen = Title
-    }
+  (resetKeepingViewAndDifficulty app) {appScreen = Title}
 
 goLeaderboard :: App -> App
 goLeaderboard app =
   app
-    { appScreen = Leaderboard
+    { appScreen        = Leaderboard
     , appPendingLbLoad = True
-    , appNotice = Nothing
+    , appNotice        = Nothing
     }
+
 goLoadGame :: App -> App
 goLoadGame app =
   app
-    { appScreen = LoadGame
-    , appSlotIx = 0
+    { appScreen           = LoadGame
+    , appSlotIx           = 0
     , appPendingSavesLoad = True
-    , appNotice = Nothing
+    , appNotice           = Nothing
     }
 
 goSaveGame :: App -> App
 goSaveGame app =
   app
-    { appScreen = SaveGame
-    , appInput = resetInput
-    , pauseIx = 0
-    , appSlotIx = 0
+    { appScreen           = SaveGame
+    , appInput            = resetInput
+    , pauseIx             = 0
+    , appSlotIx           = 0
     , appPendingSavesLoad = True
-    , appNotice = Nothing
+    , appNotice           = Nothing
     }
 
 slotMove :: Int -> App -> App
@@ -2204,95 +2139,73 @@ slotMove delta app =
   case appScreen app of
     LoadGame -> step
     SaveGame -> step
-    _ -> app
+    _        -> app
   where
-    step =
-      app
-        { appSlotIx =
-            clampInt 0 (saveSlotsCount - 1) (appSlotIx app + delta)
-        }
+    step = app { appSlotIx = clampInt 0 (saveSlotsCount - 1) (appSlotIx app + delta) }
 
 requestSaveSlot :: App -> App
 requestSaveSlot app =
   case appScreen app of
-    SaveGame ->
-      app
-        { appPendingSaveSlot = Just (appSlotIx app + 1)
-        , appNotice = Nothing
-        }
-    _ -> app
+    SaveGame -> app { appPendingSaveSlot = Just (appSlotIx app + 1), appNotice = Nothing }
+    _        -> app
 
 requestLoadSlot :: App -> App
 requestLoadSlot app =
   case appScreen app of
-    LoadGame ->
-      app
-        { appPendingLoadSlot = Just (appSlotIx app + 1)
-        , appNotice = Nothing
-        }
-    _ -> app
+    LoadGame -> app { appPendingLoadSlot = Just (appSlotIx app + 1), appNotice = Nothing }
+    _        -> app
+
 menuMove :: Int -> App -> App
 menuMove delta app =
   case appScreen app of
-    Title -> app {menuIx = clampInt 0 menuMaxIx (menuIx app + delta)}
-    _ -> app
+    Title -> app { menuIx = clampInt 0 menuMaxIx (menuIx app + delta) }
+    _     -> app
 
 menuAdjustDifficulty :: Int -> App -> App
 menuAdjustDifficulty delta app =
   case appScreen app of
     Title
       | menuIx app == menuDifficultyIx ->
-          app {appDifficulty = stepDifficulty delta (appDifficulty app)}
+          app { appDifficulty = stepDifficulty delta (appDifficulty app) }
     _ -> app
 
 stepDifficulty :: Int -> Difficulty -> Difficulty
-stepDifficulty delta d =
-  toEnum ix
+stepDifficulty delta d = toEnum ix
   where
-    lo = fromEnum (minBound :: Difficulty)
-    hi = fromEnum (maxBound :: Difficulty)
-    n = hi - lo + 1
+    lo  = fromEnum (minBound :: Difficulty)
+    hi  = fromEnum (maxBound :: Difficulty)
+    n   = hi - lo + 1
     cur = fromEnum d - lo
-    ix = lo + ((cur + delta) `mod` n)
+    ix  = lo + ((cur + delta) `mod` n)
 
 runSpeedFor :: GenConfig -> Difficulty -> Int -> Float
 runSpeedFor cfg d lvl =
   max 0 (speedBase rule + speedGrowth rule * fromIntegral lvl)
   where
-    rule =
-      case d of
-        Easy -> cfgEasySpeed cfg
-        Normal -> cfgNormalSpeed cfg
-        Hard -> cfgHardSpeed cfg
+    rule = case d of
+      Easy  -> cfgEasySpeed cfg
+      Normal-> cfgNormalSpeed cfg
+      Hard  -> cfgHardSpeed cfg
 
 togglePause :: App -> App
 togglePause app =
   case appScreen app of
-    Playing ->
-      app
-        { appScreen = Paused
-        , appInput = resetInput
-        , pauseIx = 0
-        }
-    Paused ->
-      app
-        { appScreen = Playing
-        , appInput = resetInput
-        }
-    _ -> app
+    Playing -> app { appScreen = Paused, appInput = resetInput, pauseIx = 0 }
+    Paused  -> app { appScreen = Playing, appInput = resetInput }
+    _       -> app
 
 pauseMove :: Int -> App -> App
 pauseMove delta app =
   case appScreen app of
-    Paused -> app {pauseIx = clampInt 0 2 (pauseIx app + delta)}
-    _ -> app
+    Paused -> app { pauseIx = clampInt 0 2 (pauseIx app + delta) }
+    _      -> app
 
 pauseActivate :: App -> App
 pauseActivate app =
   case appScreen app of
     Paused ->
       case pauseIx app of
-        0 -> app {appScreen = Playing, appInput = resetInput}
+        0 -> app { appScreen = Playing, appInput = resetInput }
         1 -> goSaveGame app
         _ -> goTitle app
     _ -> app
@@ -2300,31 +2213,29 @@ pauseActivate app =
 stepWorld :: Float -> App -> App
 stepWorld dt app =
   case appScreen app of
-    Title -> app
-    Controls -> app
-    NameEntry -> app
-    Leaderboard -> app
-    LoadGame -> app
-    GameOver -> app
-    Paused -> app
-    Playing -> stepPlaying dt app
-    SaveGame -> app
+    Title      -> app
+    Controls   -> app
+    NameEntry  -> app
+    Leaderboard-> app
+    LoadGame   -> app
+    GameOver   -> app
+    Paused     -> app
+    Playing    -> stepPlaying dt app
+    SaveGame   -> app
 
 stepPlaying :: Float -> App -> App
 stepPlaying dt app0 =
-  if died
-    then toGameOver app4
-    else app4
+  if died then toGameOver app4 else app4
   where
     inp0 = appInput app0
 
     scroll0 = worldScroll app0
-    cfg = appConfig app0
-    lvl = difficultyLevel cfg scroll0
-    speed = runSpeedFor cfg (appDifficulty app0) lvl
+    cfg     = appConfig app0
+    lvl     = difficultyLevel cfg scroll0
+    speed   = runSpeedFor cfg (appDifficulty app0) lvl
     scroll1 = scroll0 + speed * dt
 
-    dir = boolToFloat (inputRight inp0) - boolToFloat (inputLeft inp0)
+    dir   = boolToFloat (inputRight inp0) - boolToFloat (inputLeft inp0)
     offX0 = playerOffsetX app0
     offX1 = clamp (-steerRange) steerRange (offX0 + dir * moveSpeed * dt)
 
@@ -2335,25 +2246,22 @@ stepPlaying dt app0 =
         (worldHoles app0) (worldPlatforms app0) (worldSpikes app0)
         (worldMedkits app0)
 
-    holes2 = pruneHoles scroll1 holes1
-    plats2 = pruneRects scroll1 plats1
+    holes2  = pruneHoles scroll1 holes1
+    plats2  = pruneRects scroll1 plats1
     spikes2 = pruneRects scroll1 spikes1
-    meds2 = pruneRects scroll1 meds1
+    meds2   = pruneRects scroll1 meds1
 
-    y0 = playerY app0
+    y0  = playerY app0
     vy0 = playerVY app0
 
     supported = isSupported pxWorld y0 vy0 holes2 plats2
-    jumpNow = inputJump inp0 && supported
-    vy1 = if jumpNow then jumpVelocity else vy0
+    jumpNow   = inputJump inp0 && supported
+    vy1       = if jumpNow then jumpVelocity else vy0
 
-    inp1 =
-      if jumpNow
-        then inp0 {inputJump = False}
-        else inp0
+    inp1 = if jumpNow then inp0 { inputJump = False } else inp0
 
     vy2 = vy1 - gravity * dt
-    y1 = y0 + vy2 * dt
+    y1  = y0 + vy2 * dt
 
     (y2, vy3) = resolvePlatforms pxWorld y0 y1 vy2 plats2
 
@@ -2376,45 +2284,37 @@ stepPlaying dt app0 =
 
     (lives2, inv2) = applySpikeDamage inv1 lives1 pr spikes2
 
-    app4 =
-      app0
-        { appInput = inp1
-        , worldScroll = scroll1
-        , playerOffsetX = offX1
-        , playerY = y3
-        , playerVY = vy4
-        , playerLives = lives2
-        , playerInvTimer = inv2
-        , worldHoles = holes2
-        , worldPlatforms = plats2
-        , worldSpikes = spikes2
-        , worldMedkits = meds3
-        , nextChunkIx = chunkIx1
-        }
+    app4 = app0
+      { appInput       = inp1
+      , worldScroll    = scroll1
+      , playerOffsetX  = offX1
+      , playerY        = y3
+      , playerVY       = vy4
+      , playerLives    = lives2
+      , playerInvTimer = inv2
+      , worldHoles     = holes2
+      , worldPlatforms = plats2
+      , worldSpikes    = spikes2
+      , worldMedkits   = meds3
+      , nextChunkIx    = chunkIx1
+      }
 
     died = y3 < deathY || lives2 <= 0
 
 toGameOver :: App -> App
 toGameOver app =
   app
-    { appScreen = GameOver
-    , appInput = resetInput
+    { appScreen           = GameOver
+    , appInput            = resetInput
     , appPendingScoreSave = True
-    , appNotice = Nothing
+    , appNotice           = Nothing
     }
 
 playerRect :: Float -> Float -> Rect
-playerRect x y =
-  Rect
-    { rectX = x
-    , rectY = y
-    , rectW = playerWidth
-    , rectH = playerHeight
-    }
+playerRect x y = Rect x y playerWidth playerHeight
 
 pickupRects :: Rect -> [Rect] -> ([Rect], [Rect])
-pickupRects pr =
-  foldr step ([], [])
+pickupRects pr = foldr step ([], [])
   where
     step r (picked, rest) =
       if rectIntersects pr r
@@ -2431,30 +2331,24 @@ applySpikeDamage inv lives pr spikes =
         else (lives, inv)
 
 hitSpike :: Rect -> [Rect] -> Bool
-hitSpike pr spikes =
-  any (rectIntersects pr) spikes
+hitSpike pr spikes = any (rectIntersects pr) spikes
 
 isOverHole :: Float -> [Interval] -> Bool
-isOverHole x holes =
-  any (intervalContains x) holes
+isOverHole x holes = any (intervalContains x) holes
 
 isSupported :: Float -> Float -> Float -> [Interval] -> [Rect] -> Bool
 isSupported px y vy holes plats =
   (not (isOverHole px holes) && isOnGround y vy) || isOnPlatform px y vy plats
 
 isOnGround :: Float -> Float -> Bool
-isOnGround y vy =
-  bottomY <= groundTopY + 0.001 && vy <= 0
-  where
-    bottomY = y - playerHeight / 2
+isOnGround y vy = bottomY <= groundTopY + 0.001 && vy <= 0
+  where bottomY = y - playerHeight / 2
 
 isOnPlatform :: Float -> Float -> Float -> [Rect] -> Bool
-isOnPlatform px y vy plats =
-  any (onOne px bottomY vy) plats
+isOnPlatform px y vy plats = any (onOne px bottomY vy) plats
   where
     bottomY = y - playerHeight / 2
-    eps = 2.0
-
+    eps     = 2.0
     onOne x b v r =
       v <= 0.01
         && playerFullyInside x r
@@ -2465,14 +2359,13 @@ applyGroundCollision y vy =
   if bottomY < groundTopY
     then (groundTopY + playerHeight / 2, 0)
     else (y, vy)
-  where
-    bottomY = y - playerHeight / 2
+  where bottomY = y - playerHeight / 2
 
 resolvePlatforms :: Float -> Float -> Float -> Float -> [Rect] -> (Float, Float)
 resolvePlatforms px y0 y1 vy plats =
   case bestTop of
-    Nothing -> (y1, vy)
-    Just topY -> (topY + playerHeight / 2, 0)
+    Nothing  -> (y1, vy)
+    Just topY-> (topY + playerHeight / 2, 0)
   where
     y0Bottom = y0 - playerHeight / 2
     y1Bottom = y1 - playerHeight / 2
@@ -2486,27 +2379,23 @@ resolvePlatforms px y0 y1 vy plats =
       , y1Bottom <= rectTop r
       ]
 
-    bestTop =
-      if null candidates then Nothing else Just (maximum candidates)
+    bestTop = if null candidates then Nothing else Just (maximum candidates)
 
 playerFullyInside :: Float -> Rect -> Bool
 playerFullyInside px r =
   (px - halfPW) >= rectLeft r + platformEdgeInset
     && (px + halfPW) <= rectRight r - platformEdgeInset
-  where
-    halfPW = playerWidth / 2
+  where halfPW = playerWidth / 2
 
 pruneHoles :: Float -> [Interval] -> [Interval]
-pruneHoles scroll =
-  filter (\h -> intB h > scroll - despawnBehind)
+pruneHoles scroll = filter (\h -> intB h > scroll - despawnBehind)
 
 pruneRects :: Float -> [Rect] -> [Rect]
-pruneRects scroll =
-  filter (\r -> rectRight r > scroll - despawnBehind)
+pruneRects scroll = filter (\r -> rectRight r > scroll - despawnBehind)
 
 boolToFloat :: Bool -> Float
-boolToFloat b =
-  if b then 1 else 0
+boolToFloat True  = 1
+boolToFloat False = 0
 
 clamp :: Float -> Float -> Float -> Float
 clamp lo hi x
@@ -2523,168 +2412,141 @@ clampInt lo hi x
 applySaveRow :: SaveRow -> App -> Either String App
 applySaveRow row old = do
   diff <- parseDifficulty (saveDifficulty row)
-  let base = resetForLoad old diff
-  let scroll = saveWorldScroll row
-  let lives = saveLives row
-  let (hs, ps, ss, ms, nextIx) = rebuildWorld (appConfig base) scroll
-  pure
-    base
-      { appScreen = Playing
-      , worldScroll = scroll
-      , playerOffsetX = 0
-      , playerY = playerStartY
-      , playerVY = 0
-      , playerLives = clampInt 0 maxLives lives
-      , playerInvTimer = 0
-      , worldHoles = hs
-      , worldPlatforms = ps
-      , worldSpikes = ss
-      , worldMedkits = ms
-      , nextChunkIx = nextIx
-      , appInput = resetInput
-      , appNotice = Nothing
-      , appPendingScoreSave = False
-      , appPendingLbLoad = False
-      , appPendingSavesLoad = False
-      , appPendingSaveSlot = Nothing
-      , appPendingLoadSlot = Nothing
-      }
+  let base   = resetForLoad old diff
+      scroll = saveWorldScroll row
+      lives  = saveLives row
+      (hs, ps, ss, ms, nextIx) = rebuildWorld (appConfig base) scroll
+  pure base
+    { appScreen           = Playing
+    , worldScroll         = scroll
+    , playerOffsetX       = 0
+    , playerY             = playerStartY
+    , playerVY            = 0
+    , playerLives         = clampInt 0 maxLives lives
+    , playerInvTimer      = 0
+    , worldHoles          = hs
+    , worldPlatforms      = ps
+    , worldSpikes         = ss
+    , worldMedkits        = ms
+    , nextChunkIx         = nextIx
+    , appInput            = resetInput
+    , appNotice           = Nothing
+    , appPendingScoreSave = False
+    , appPendingLbLoad    = False
+    , appPendingSavesLoad = False
+    , appPendingSaveSlot  = Nothing
+    , appPendingLoadSlot  = Nothing
+    }
 
 resetForLoad :: App -> Difficulty -> App
 resetForLoad old diff =
   (initialApp (appConfig old) (appDbPath old))
-    { viewW = viewW old
-    , viewH = viewH old
-    , appShowDebug = appShowDebug old
+    { viewW         = viewW old
+    , viewH         = viewH old
+    , appShowDebug  = appShowDebug old
     , appPlayerName = appPlayerName old
-    , appNameInput = appPlayerName old
+    , appNameInput  = appPlayerName old
     , appDifficulty = diff
     }
 
 parseDifficulty :: String -> Either String Difficulty
-parseDifficulty s =
-  case s of
-    "Easy" -> Right Easy
-    "Normal" -> Right Normal
-    "Hard" -> Right Hard
-    _ -> Left ("Save error: unknown difficulty: " ++ s)
+parseDifficulty s = case s of
+  "Easy"   -> Right Easy
+  "Normal" -> Right Normal
+  "Hard"   -> Right Hard
+  _        -> Left ("Save error: unknown difficulty: " ++ s)
 
-rebuildWorld
-  :: GenConfig
-  -> Float
-  -> ([Interval], [Rect], [Rect], [Rect], Int)
+rebuildWorld :: GenConfig -> Float -> ([Interval], [Rect], [Rect], [Rect], Int)
 rebuildWorld cfg scroll =
   (holes, plats, spikes, meds, endIx + 1)
   where
     startIx = max 0 (chunkIxAt (scroll - despawnBehind) - 1)
-    endIx = chunkIxAt (scroll + spawnAhead) + 1
-    ixs = [startIx .. endIx]
+    endIx   = chunkIxAt (scroll + spawnAhead) + 1
+    ixs     = [startIx .. endIx]
 
-    (holes, plats, spikes, meds) =
-      foldr add ([], [], [], []) ixs
+    (holes, plats, spikes, meds) = foldr add ([], [], [], []) ixs
 
     add ix (ha, pa, sa, ma) =
       let (h1, p1, s1, m1) = generateChunk cfg ix
-       in (h1 ++ ha, p1 ++ pa, s1 ++ sa, m1 ++ ma)
+      in (h1 ++ ha, p1 ++ pa, s1 ++ sa, m1 ++ ma)
 
 chunkIxAt :: Float -> Int
-chunkIxAt x =
-  floor (x / chunkWidth)
--- Name input (pure)
+chunkIxAt x = floor (x / chunkWidth)
 
 nameAddChar :: Char -> App -> App
 nameAddChar c app
-  | appScreen app /= NameEntry = app
-  | not (isAllowedNameChar c) = app
+  | appScreen app /= NameEntry               = app
+  | not (isAllowedNameChar c)                 = app
   | length (appNameInput app) >= playerNameMaxLen = app
-  | otherwise =
-      app {appNameInput = appNameInput app ++ [c]}
+  | otherwise = app { appNameInput = appNameInput app ++ [c] }
 
 nameBackspace :: App -> App
 nameBackspace app
   | appScreen app /= NameEntry = app
-  | null (appNameInput app) = app
-  | otherwise =
-      app {appNameInput = init (appNameInput app)}
+  | null (appNameInput app)    = app
+  | otherwise = app { appNameInput = init (appNameInput app) }
 
 nameConfirm :: App -> App
 nameConfirm app
   | appScreen app /= NameEntry = app
-  | otherwise =
-      app
-        { appPlayerName = finalName
-        , appNameInput = finalName
-        , appScreen = Playing
-        , appInput = resetInput
-        , appNotice = Nothing
-        }
+  | otherwise = app
+      { appPlayerName = finalName
+      , appNameInput  = finalName
+      , appScreen     = Playing
+      , appInput      = resetInput
+      , appNotice     = Nothing
+      }
   where
-    trimmed = trimSpaces (appNameInput app)
-    finalName =
-      if null trimmed then defaultPlayerName else trimmed
+    trimmed   = trimSpaces (appNameInput app)
+    finalName = if null trimmed then defaultPlayerName else trimmed
 
 isAllowedNameChar :: Char -> Bool
 isAllowedNameChar c =
-  isAscii c
-    && (isAlphaNum c || c == ' ' || c == '_' || c == '-')
+  isAscii c && (isAlphaNum c || c == ' ' || c == '_' || c == '-')
 
 trimSpaces :: String -> String
 trimSpaces = dropWhile (== ' ') . dropWhileEndSpace
 
 dropWhileEndSpace :: String -> String
-dropWhileEndSpace s =
-  reverse (dropWhile (== ' ') (reverse s))
+dropWhileEndSpace s = reverse (dropWhile (== ' ') (reverse s))
 
 
 -- ============================================================
 -- Файл: src\Game\Constants.hs
 -- ============================================================
 
--- ============================================================
--- Модуль: Game.Constants
--- Описание: Все настраиваемые параметры игры.
--- Группировка по функциональному назначению.
--- ============================================================
-
 module Game.Constants
   (
-    -- * Окно и основные настройки
     windowTitle, windowWidth, windowHeight, windowPos,
     backgroundColor, fps,
 
-    -- * Главное меню
     titleText, titleX, titleY, titleScale, titleColor,
     menuItemX, menuItemY0, menuItemY1, menuItemY2, menuItemY3, menuItemY4,
     menuItemScale, menuItemColor, menuSelectedColor,
     menuHintText, menuHintX, menuHintY, menuHintScale, menuHintColor,
 
-    -- * Игрок
     playerWidth, playerHeight, playerStartY, playerBaseX,
     steerRange, invBlinkHz, moveSpeed,
     runSpeedEasy, runSpeedNormal, runSpeedHard,
     metersPerPixel, gravity, jumpVelocity,
     playerSpritePxW, playerSpritePxH, playerRunFrameStep,
 
-    -- * Земля и мир
     groundY, groundHeight, groundTopY, groundColor,
     markSpacing, markColor, distanceColor,
     deathY, maxLives, invincibilityDuration,
     heartW, heartH, heartSpacing, heartFullColor, heartEmptyColor,
 
-    -- * Генерация уровней (объекты)
     chunkWidth, spawnAhead, despawnBehind,
     holeWidth,
     platformW, platformH, platformLift, platformEdgeInset, platformColor,
     spikeW, spikeH, spikeColor,
     medkitW, medkitH, medkitLift, medkitColor, medkitCrossColor,
 
-    -- * Экран Game Over
     gameOverTitleText, gameOverTitleX, gameOverTitleY,
     gameOverTitleScale, gameOverTitleColor,
     gameOverHintText, gameOverHintX, gameOverHintY,
     gameOverHintScale, gameOverHintColor,
 
-    -- * Экран паузы
     pauseTitleText,
     pausePanelW, pausePanelH, pausePanelColor, pausePanelBorderColor,
     pauseTitleScale, pauseTitleColor,
@@ -2692,17 +2554,12 @@ module Game.Constants
     pauseHintText, pauseHintScale, pauseHintColor,
     pauseItem3Y,
 
-    -- * База данных и сохранения
     dbFileName, leaderboardLimit,
     defaultPlayerName, playerNameMaxLen,
     scoreSavedText, saveSlotsCount, defaultSaveSeed
   ) where
 
 import Graphics.Gloss (Color, makeColorI)
-
-------------------------------------------------------------------------------
--- Окно и основные настройки
-------------------------------------------------------------------------------
 
 windowTitle :: String
 windowTitle = "Endless Runner"
@@ -2721,10 +2578,6 @@ backgroundColor = makeColorI 15 20 25 255
 
 fps :: Int
 fps = 60
-
-------------------------------------------------------------------------------
--- Главное меню
-------------------------------------------------------------------------------
 
 titleText :: String
 titleText = "Endless Runner"
@@ -2776,37 +2629,32 @@ menuHintScale = 0.18
 menuHintColor :: Color
 menuHintColor =  makeColorI 200 215 230 255 
 
-------------------------------------------------------------------------------
--- Игрок (физика, размеры, анимация)
-------------------------------------------------------------------------------
-
 playerWidth, playerHeight :: Float
 playerWidth = 40
 playerHeight = 60
 
 playerStartY :: Float
-playerStartY = groundTopY + playerHeight / 2   -- зависит от земли, см. ниже
+playerStartY = groundTopY + playerHeight / 2   
 
 playerBaseX :: Float
-playerBaseX = -300   -- смещение игрока относительно центра экрана
+playerBaseX = -300   
 
 steerRange :: Float
-steerRange = 140      -- максимальное отклонение влево/вправо от центра
+steerRange = 140      
 
 invBlinkHz :: Float
-invBlinkHz = 12       -- частота мигания при получении урона
+invBlinkHz = 12       
 
 moveSpeed :: Float
-moveSpeed = 260       -- скорость горизонтального движения (пикселей/сек)
+moveSpeed = 260       
 
--- Базовая скорость бега (world scroll) для разных уровней сложности
 runSpeedEasy, runSpeedNormal, runSpeedHard :: Float
 runSpeedEasy   = 280
 runSpeedNormal = 320
 runSpeedHard   = 380
 
 metersPerPixel :: Float
-metersPerPixel = 0.10   -- сколько метров в одном пикселе (для отображения дистанции)
+metersPerPixel = 0.10   
 
 gravity :: Float
 gravity = 1200
@@ -2814,17 +2662,12 @@ gravity = 1200
 jumpVelocity :: Float
 jumpVelocity = 520
 
--- Размеры спрайтов (для масштабирования)
 playerSpritePxW, playerSpritePxH :: Float
 playerSpritePxW = 180
 playerSpritePxH = 180
 
 playerRunFrameStep :: Float
-playerRunFrameStep = 28   -- пикселей прокрутки мира для смены кадра бега
-
-------------------------------------------------------------------------------
--- Земля и статическое окружение
-------------------------------------------------------------------------------
+playerRunFrameStep = 28   
 
 groundY :: Float
 groundY = -200
@@ -2836,86 +2679,73 @@ groundTopY :: Float
 groundTopY = groundY + groundHeight / 2
 
 groundColor :: Color
-groundColor = makeColorI 80 170 80 255   -- зелёная трава
+groundColor = makeColorI 80 170 80 255   
 
 markSpacing :: Float
-markSpacing = 120       -- расстояние между метками на земле
+markSpacing = 120      
 
 markColor :: Color
-markColor = makeColorI 120 220 120 255   -- светлые зелёные метки
+markColor = makeColorI 120 220 120 255   
 
 distanceColor :: Color
-distanceColor = makeColorI 240 240 240 255  -- белый текст счётчика
+distanceColor = makeColorI 240 240 240 255  
 
 deathY :: Float
-deathY = -300            -- порог смерти (игрок провалился)
+deathY = -300            
 
 maxLives :: Int
 maxLives = 3
 
 invincibilityDuration :: Float
-invincibilityDuration = 0.8   -- секунд неуязвимости после урона
+invincibilityDuration = 0.8   
 
--- Параметры сердечек (визуализация жизней)
 heartW, heartH, heartSpacing :: Float
 heartW = 18
 heartH = 14
 heartSpacing = 24
 
 heartFullColor, heartEmptyColor :: Color
-heartFullColor  = makeColorI 220 80 80 255    -- красное
-heartEmptyColor = makeColorI 70 70 70 255     -- тёмно-серое
-
-------------------------------------------------------------------------------
--- Генерация уровней (чанки и объекты)
-------------------------------------------------------------------------------
+heartFullColor  = makeColorI 220 80 80 255    
+heartEmptyColor = makeColorI 70 70 70 255     
 
 chunkWidth :: Float
 chunkWidth = 700
 
 spawnAhead :: Float
-spawnAhead = 2000      -- сколько пикселей вперёд генерировать
+spawnAhead = 2000      
 
 despawnBehind :: Float
-despawnBehind = 800    -- за какой границей удалять объекты
+despawnBehind = 800    
 
--- Ямы
 holeWidth :: Float
 holeWidth = 160
 
--- Платформы
 platformW, platformH, platformLift :: Float
 platformW = 180
 platformH = 18
-platformLift = 50       -- подъём над землёй
+platformLift = 50      
 
 platformEdgeInset :: Float
-platformEdgeInset = 0   -- запас по краям платформы (для безопасного стояния)
+platformEdgeInset = 0   
 
 platformColor :: Color
-platformColor = makeColorI 120 120 220 255   -- синеватые
+platformColor = makeColorI 120 120 220 255   
 
--- Шипы
 spikeW, spikeH :: Float
 spikeW = 40
 spikeH = 35
 
 spikeColor :: Color
-spikeColor = makeColorI 220 80 80 255        -- красные
+spikeColor = makeColorI 220 80 80 255        
 
--- Аптечки
 medkitW, medkitH, medkitLift :: Float
 medkitW = 26
 medkitH = 26
-medkitLift = 70         -- высота парения над поверхностью
+medkitLift = 70         
 
 medkitColor, medkitCrossColor :: Color
-medkitColor      = makeColorI 80 200 120 255   -- зелёная
-medkitCrossColor = makeColorI 240 240 240 255  -- белый крест
-
-------------------------------------------------------------------------------
--- Экран Game Over
-------------------------------------------------------------------------------
+medkitColor      = makeColorI 80 200 120 255   
+medkitCrossColor = makeColorI 240 240 240 255  
 
 gameOverTitleText :: String
 gameOverTitleText = "Game Over"
@@ -2928,7 +2758,7 @@ gameOverTitleScale :: Float
 gameOverTitleScale = 0.5
 
 gameOverTitleColor :: Color
-gameOverTitleColor = makeColorI 255 0 0 0   -- бледно-розовый
+gameOverTitleColor = makeColorI 255 0 0 0   
 
 gameOverHintText :: String
 gameOverHintText = "Enter: restart  |  Backspace: menu  |  Esc: quit"
@@ -2941,11 +2771,7 @@ gameOverHintScale :: Float
 gameOverHintScale = 0.2
 
 gameOverHintColor :: Color
-gameOverHintColor = makeColorI 240 240 240 255    -- белый
-
-------------------------------------------------------------------------------
--- Экран паузы
-------------------------------------------------------------------------------
+gameOverHintColor = makeColorI 240 240 240 255    
 
 pauseTitleText :: String
 pauseTitleText = "Paused"
@@ -2955,8 +2781,8 @@ pausePanelW = 600
 pausePanelH = 300
 
 pausePanelColor, pausePanelBorderColor :: Color
-pausePanelColor       = makeColorI 30 30 30 235      -- тёмный полупрозрачный
-pausePanelBorderColor = makeColorI 220 220 220 255   -- светло-серый
+pausePanelColor       = makeColorI 30 30 30 235      
+pausePanelBorderColor = makeColorI 220 220 220 255   
 
 pauseTitleScale :: Float
 pauseTitleScale = 0.35
@@ -2968,8 +2794,8 @@ pauseItemScale :: Float
 pauseItemScale = 0.24
 
 pauseItemSelectedColor, pauseItemColor :: Color
-pauseItemSelectedColor = makeColorI 255 255 255 255   -- ярко-белый
-pauseItemColor         = makeColorI 180 180 180 255   -- серый
+pauseItemSelectedColor = makeColorI 255 255 255 255   
+pauseItemColor         = makeColorI 180 180 180 255   
 
 pauseHintText :: String
 pauseHintText = "Up/Down: choose  |  Enter: select  |  P: resume"
@@ -2981,11 +2807,7 @@ pauseHintColor :: Color
 pauseHintColor = makeColorI 160 160 160 255
 
 pauseItem3Y :: Float
-pauseItem3Y = -70    -- позиция третьего пункта ("Quit to Title")
-
-------------------------------------------------------------------------------
--- База данных и сохранения
-------------------------------------------------------------------------------
+pauseItem3Y = -70    
 
 dbFileName :: FilePath
 dbFileName = "game.db"

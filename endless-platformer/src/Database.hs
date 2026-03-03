@@ -15,7 +15,7 @@ import Control.Exception (SomeException, bracket, displayException, try)
 import Database.SQLite.Simple
   ( Connection
   , Only(..)
-  ,Query
+  , Query
   , close
   , execute
   , execute_
@@ -26,31 +26,29 @@ import Database.SQLite.Simple
 import Database.SQLite.Simple.FromRow (FromRow(..), field)
 
 data ScoreRow = ScoreRow
-  { scoreId :: Int
+  { scoreId         :: Int
   , scorePlayerName :: String
-  , scoreDistance :: Int
+  , scoreDistance   :: Int
   , scoreDifficulty :: String
-  , scoreCreatedAt :: String
+  , scoreCreatedAt  :: String
   }
   deriving (Eq, Show)
 
 instance FromRow ScoreRow where
-  fromRow =
-    ScoreRow <$> field <*> field <*> field <*> field <*> field
+  fromRow = ScoreRow <$> field <*> field <*> field <*> field <*> field
 
 data SaveRow = SaveRow
-  { saveSlot :: Int
-  , saveSeed :: Int
+  { saveSlot       :: Int
+  , saveSeed       :: Int
   , saveWorldScroll :: Float
-  , saveLives :: Int
+  , saveLives      :: Int
   , saveDifficulty :: String
-  , saveCreatedAt :: String
+  , saveCreatedAt  :: String
   }
   deriving (Eq, Show)
 
 instance FromRow SaveRow where
-  fromRow =
-    SaveRow <$> field <*> field <*> field <*> field <*> field <*> field
+  fromRow = SaveRow <$> field <*> field <*> field <*> field <*> field <*> field
 
 initDb :: FilePath -> IO (Either String ())
 initDb path =
@@ -108,15 +106,15 @@ expectOne :: String -> [a] -> Either String a
 expectOne msg xs =
   case xs of
     [x] -> Right x
-    [] -> Left msg
-    _ -> Left "DB error: expected one row, got many."
+    []  -> Left msg
+    _   -> Left "DB error: expected one row, got many."
 
 withConn :: FilePath -> (Connection -> IO a) -> IO (Either String a)
 withConn path action = do
   r <- try (bracket (open path) close action)
   pure $
     case r of
-      Left e -> Left (dbErr path e)
+      Left e  -> Left (dbErr path e)
       Right x -> Right x
 
 dbErr :: FilePath -> SomeException -> String
@@ -126,7 +124,7 @@ dbErr path e =
     , displayException e
     ]
 
-createScoresSql :: Database.SQLite.Simple.Query
+createScoresSql :: Query
 createScoresSql =
   "CREATE TABLE IF NOT EXISTS scores (\
   \ id INTEGER PRIMARY KEY AUTOINCREMENT,\
@@ -136,7 +134,7 @@ createScoresSql =
   \ created_at TEXT NOT NULL DEFAULT (datetime('now'))\
   \);"
 
-createSavesSql :: Database.SQLite.Simple.Query
+createSavesSql :: Query
 createSavesSql =
   "CREATE TABLE IF NOT EXISTS saves (\
   \ slot INTEGER PRIMARY KEY,\

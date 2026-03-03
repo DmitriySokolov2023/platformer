@@ -1,14 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Render (drawAppIO) where
 
-import Assets (Assets (..))
-import Config (GenConfig (..), SpeedRule (..), difficultyLevel, objectChance)
+import Assets (Assets(..))
+import Config (GenConfig(..), SpeedRule(..), difficultyLevel, objectChance)
 import Data.List (find, sortOn)
 import Game.Constants
 import Geometry
-  ( Interval (..)
-  , Rect (..)
+  ( Interval(..)
+  , Rect(..)
   , intervalContains
   , intervalOverlaps
   , rectBottom
@@ -17,24 +15,30 @@ import Geometry
   , rectTop
   )
 import Graphics.Gloss
-import World (App (..), Difficulty (..), Screen (..), isSupported)
+import World
+  ( App(..)
+  , Difficulty(..)
+  , Screen(..)
+  , isSupported
+  )
 import Database (ScoreRow(..), SaveRow(..))
 import Text.Printf (printf)
+
 drawAppIO :: Assets -> App -> IO Picture
 drawAppIO assets app = pure (drawApp assets app)
 
 drawApp :: Assets -> App -> Picture
 drawApp assets app =
   case appScreen app of
-    Title -> drawMenu app
-    Controls -> drawControls app
-    Playing -> drawPlaying assets app
-    Paused -> drawPaused assets app
+    Title       -> drawMenu app
+    Controls    -> drawControls app
+    Playing     -> drawPlaying assets app
+    Paused      -> drawPaused assets app
     Leaderboard -> drawLeaderboard app
-    LoadGame -> drawLoadGame app
-    GameOver -> drawGameOver assets app
-    NameEntry -> drawNameEntry app
-    SaveGame -> drawSaveGame app
+    LoadGame    -> drawLoadGame app
+    GameOver    -> drawGameOver assets app
+    NameEntry   -> drawNameEntry app
+    SaveGame    -> drawSaveGame app
 
 drawMenu :: App -> Picture
 drawMenu app =
@@ -64,7 +68,6 @@ drawMenuItem app ix label y =
 menuItemColorBy :: App -> Int -> Color
 menuItemColorBy app ix =
   if menuIx app == ix then menuSelectedColor else menuItemColor
-
 
 drawControls :: App -> Picture
 drawControls app =
@@ -134,10 +137,10 @@ drawWorld assets app =
       ]
   where
     cameraX = worldScroll app - playerBaseX
-    holes = worldHoles app
-    plats = worldPlatforms app
-    spikes = worldSpikes app
-    meds = worldMedkits app
+    holes   = worldHoles app
+    plats   = worldPlatforms app
+    spikes  = worldSpikes app
+    meds    = worldMedkits app
 
 drawHudPlaying :: App -> Picture
 drawHudPlaying app =
@@ -185,26 +188,14 @@ pauseItemClr :: App -> Int -> Color
 pauseItemClr app ix =
   if pauseIx app == ix then pauseItemSelectedColor else pauseItemColor
 
-pauseTitleX :: Float
+pauseTitleX, pauseTitleY, pauseItemX, pauseItem1Y, pauseItem2Y, pauseHintX, pauseHintY :: Float
 pauseTitleX = -90
-
-pauseTitleY :: Float
 pauseTitleY = 55
-
-pauseItemX :: Float
-pauseItemX = -150
-
-pauseItem1Y :: Float
+pauseItemX  = -150
 pauseItem1Y = 10
-
-pauseItem2Y :: Float
 pauseItem2Y = -28
-
-pauseHintX :: Float
-pauseHintX = -250
-
-pauseHintY :: Float
-pauseHintY = -130
+pauseHintX  = -250
+pauseHintY  = -130
 
 drawGameOverText :: App -> Picture
 drawGameOverText app =
@@ -249,9 +240,7 @@ drawLivesBelowDistance app =
     dx i = fromIntegral (i - 1) * heartSpacing
 
     heartColor i =
-      if i <= playerLives app
-        then heartFullColor
-        else heartEmptyColor
+      if i <= playerLives app then heartFullColor else heartEmptyColor
 
 drawDebugBelowLives :: App -> Picture
 drawDebugBelowLives app
@@ -265,10 +254,10 @@ drawDebugBelowLives app
         | (i, dbgLine) <- zip [0 :: Int ..] (debugLines app)
         ]
   where
-    x = screenLeft app + 10
-    y0 = screenTop app - 95
-    dy = 18
-    s = 0.16
+    x        = screenLeft app + 10
+    y0       = screenTop app - 95
+    dy       = 18
+    s        = 0.16
     dbgColor = makeColorI 210 230 255 255
 
 debugLines :: App -> [String]
@@ -282,43 +271,39 @@ debugLines app =
   , "objs H/P/S/M " ++ show nH ++ "/" ++ show nP ++ "/" ++ show nS ++ "/" ++ show nM
   ]
   where
-    cfg = appConfig app
+    cfg   = appConfig app
     scroll = worldScroll app
-    px = scroll + playerOffsetX app
+    px    = scroll + playerOffsetX app
 
-    lvl = difficultyLevel cfg scroll
+    lvl   = difficultyLevel cfg scroll
     speed = speedAtLevel app lvl
 
-    holeP = objectChance (cfgHoleRule cfg) lvl
+    holeP  = objectChance (cfgHoleRule cfg) lvl
     spikeP = objectChance (cfgSpikeRule cfg) lvl
-    medP = objectChance (cfgMedkitRule cfg) lvl
+    medP   = objectChance (cfgMedkitRule cfg) lvl
 
     nH = length (worldHoles app)
     nP = length (worldPlatforms app)
     nS = length (worldSpikes app)
     nM = length (worldMedkits app)
 
-    supported =
-      isSupported px (playerY app) (playerVY app) (worldHoles app) (worldPlatforms app)
+    supported = isSupported px (playerY app) (playerVY app) (worldHoles app) (worldPlatforms app)
 
 speedAtLevel :: App -> Int -> Float
 speedAtLevel app lvl =
   speedBase rule + speedGrowth rule * fromIntegral lvl
   where
     cfg = appConfig app
-    rule =
-      case appDifficulty app of
-        Easy -> cfgEasySpeed cfg
-        Normal -> cfgNormalSpeed cfg
-        Hard -> cfgHardSpeed cfg
+    rule = case appDifficulty app of
+      Easy   -> cfgEasySpeed cfg
+      Normal -> cfgNormalSpeed cfg
+      Hard   -> cfgHardSpeed cfg
 
 show1 :: Float -> String
-show1 x =
-  show ((fromIntegral (round (x * 10) :: Int) / 10) :: Float)
+show1 x = show ((fromIntegral (round (x * 10) :: Int) / 10) :: Float)
 
 pct :: Float -> String
-pct p =
-  show (round (p * 100) :: Int) ++ "%"
+pct p = show (round (p * 100) :: Int) ++ "%"
 
 drawExitTopRight :: App -> Picture
 drawExitTopRight app =
@@ -332,9 +317,7 @@ drawGroundWithHoles app cameraX holes =
   pictures (map drawSeg segs)
   where
     (leftX, rightX) = visibleRange app cameraX
-    hs =
-      sortOn intA
-        $ filter (intervalOverlaps leftX rightX) holes
+    hs = sortOn intA $ filter (intervalOverlaps leftX rightX) holes
     segs = buildSegments leftX rightX hs
 
 drawSeg :: (Float, Float) -> Picture
@@ -343,7 +326,7 @@ drawSeg (x1, x2) =
     $ color groundColor
     $ rectangleSolid w groundHeight
   where
-    w = x2 - x1
+    w  = x2 - x1
     cx = (x1 + x2) / 2
 
 buildSegments :: Float -> Float -> [Interval] -> [(Float, Float)]
@@ -358,8 +341,8 @@ buildSegments leftX rightX holes =
       | intB h <= cursor =
           go cursor hs
       | otherwise =
-          let segEnd = min (intA h) rightX
-              cursor' = max cursor (intB h)
+          let segEnd   = min (intA h) rightX
+              cursor'  = max cursor (intB h)
               segsHere = if cursor < segEnd then [(cursor, segEnd)] else []
            in segsHere ++ go cursor' hs
 
@@ -385,8 +368,7 @@ drawMark x =
     markH = 8
 
 drawPlatforms :: [Rect] -> Picture
-drawPlatforms plats =
-  pictures (map drawPlat plats)
+drawPlatforms plats = pictures (map drawPlat plats)
   where
     drawPlat r =
       translate (rectX r) (rectY r)
@@ -394,8 +376,7 @@ drawPlatforms plats =
         $ rectangleSolid (rectW r) (rectH r)
 
 drawSpikes :: [Rect] -> Picture
-drawSpikes spikes =
-  pictures (map drawSpike spikes)
+drawSpikes spikes = pictures (map drawSpike spikes)
 
 drawSpike :: Rect -> Picture
 drawSpike r =
@@ -407,8 +388,7 @@ drawSpike r =
       ]
 
 drawMedkits :: [Rect] -> Picture
-drawMedkits meds =
-  pictures (map drawMedkit meds)
+drawMedkits meds = pictures (map drawMedkit meds)
 
 drawMedkit :: Rect -> Picture
 drawMedkit r =
@@ -429,7 +409,7 @@ drawPlayer assets app =
     $ color (makeColorI 255 255 255 alpha) playerPic
   where
     px = worldScroll app + playerOffsetX app
-    s = spriteScale
+    s  = spriteScale
 
     playerPic =
       if playerIsInAir app
@@ -442,24 +422,22 @@ drawPlayer assets app =
         else 255
 
 spriteScale :: Float
-spriteScale =
-  min (playerWidth / playerSpritePxW) (playerHeight / playerSpritePxH)
+spriteScale = min (playerWidth / playerSpritePxW) (playerHeight / playerSpritePxH)
 
 pickRunFrame :: Assets -> App -> Picture
 pickRunFrame assets app =
   assetsPlayerRun assets !! ix
   where
-    n = length (assetsPlayerRun assets)
+    n  = length (assetsPlayerRun assets)
     ix = (floor (worldScroll app / playerRunFrameStep) :: Int) `mod` n
 
 blinkOff :: Float -> Bool
-blinkOff inv =
-  odd (floor (inv * invBlinkHz) :: Int)
+blinkOff inv = odd (floor (inv * invBlinkHz) :: Int)
 
 playerIsInAir :: App -> Bool
 playerIsInAir app = not (isSupported px (playerY app) (playerVY app) holes plats)
   where
-    px = worldScroll app + playerOffsetX app
+    px    = worldScroll app + playerOffsetX app
     holes = worldHoles app
     plats = worldPlatforms app
 
@@ -467,17 +445,13 @@ visibleRange :: App -> Float -> (Float, Float)
 visibleRange app cameraX =
   (cameraX - halfW - margin, cameraX + halfW + margin)
   where
-    halfW = fromIntegral (viewW app) / 2
+    halfW  = fromIntegral (viewW app) / 2
     margin = 200
 
-screenLeft :: App -> Float
-screenLeft app = -fromIntegral (viewW app) / 2
-
-screenRight :: App -> Float
-screenRight app = fromIntegral (viewW app) / 2
-
-screenTop :: App -> Float
-screenTop app = fromIntegral (viewH app) / 2
+screenLeft, screenRight, screenTop :: App -> Float
+screenLeft  app = -fromIntegral (viewW app) / 2
+screenRight app =  fromIntegral (viewW app) / 2
+screenTop   app =  fromIntegral (viewH app) / 2
 
 drawLoadGame :: App -> Picture
 drawLoadGame app =
@@ -529,15 +503,14 @@ slotColor app ix =
   if appSlotIx app == ix then menuSelectedColor else menuItemColor
 
 lookupSave :: Int -> [SaveRow] -> Maybe SaveRow
-lookupSave slot rows =
-  find (\r -> saveSlot r == slot) rows
+lookupSave slot rows = find (\r -> saveSlot r == slot) rows
 
 formatSlot :: Int -> Maybe SaveRow -> String
 formatSlot slot mRow =
   case mRow of
     Nothing ->
       "Slot " ++ show slot ++ ": empty"
-    Just r ->
+    Just r  ->
       "Slot " ++ show slot ++ ": "
         ++ show meters ++ " m  "
         ++ "Lives " ++ show (saveLives r) ++ "  "
@@ -555,7 +528,7 @@ drawLeaderboard app =
         $ Text "Leaderboard"
     , translate (-420) 60
         $ scale 0.20 0.20
-        $ color (makeColorI 200 255 0 255 )
+        $ color (makeColorI 200 255 0 255)
         $ Text "Top 10 (Backspace: menu)"
     , drawLeaderboardRows app
     , drawNotice app (-420) (-180)
@@ -565,7 +538,7 @@ drawLeaderboard app =
 drawLeaderboardRows :: App -> Picture
 drawLeaderboardRows app =
   pictures
-    [ translate (-420) (y0 - dy * fromIntegral i -30)
+    [ translate (-420) (y0 - dy * fromIntegral i - 30)
         $ scale 0.18 0.18
         $ color (makeColorI 230 230 230 255)
         $ Text (formatRow (i + 1) row)
@@ -577,17 +550,17 @@ drawLeaderboardRows app =
 
 formatRow :: Int -> ScoreRow -> String
 formatRow pos r =
-    printf "[%-2d] %6s m  %-10s  %-20s"
-           pos
-           (show (scoreDistance r))
-           (scoreDifficulty r)
-           (scorePlayerName r)
+  printf "[%-2d] %6s m  %-10s  %-20s"
+         pos
+         (show (scoreDistance r))
+         (scoreDifficulty r)
+         (scorePlayerName r)
 
 drawNotice :: App -> Float -> Float -> Picture
 drawNotice app x y =
   case appNotice app of
-    Nothing -> Blank
-    Just msg ->
+    Nothing   -> Blank
+    Just msg  ->
       translate x y
         $ scale 0.16 0.16
         $ color (makeColorI 255 200 200 255)
